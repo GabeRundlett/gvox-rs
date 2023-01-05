@@ -1,7 +1,11 @@
 // extern crate bindgen;
+use std::env;
 
 fn main() {
-    println!("cargo:rustc-link-search=prebuilt");
+    println!(
+        "cargo:rustc-link-search={}/prebuilt",
+        env::var_os("CARGO_MANIFEST_DIR").unwrap().to_str().expect("Failed converting to str")
+    );
     println!("cargo:rustc-link-lib=gvox");
 
     // use std::env;
