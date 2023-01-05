@@ -12,4 +12,4 @@ repository = "https://github.com/GabeRundlett/gvox-rs"
 [dependencies]
 
 [build-dependencies]
-bindgen = "0.63.0"
+# bindgen = "0.63.0"

@@ -3,13 +3,91 @@ mod gvox {
     #![allow(non_camel_case_types)]
     #![allow(non_snake_case)]
 
-    include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
+    mod ffi {
+        #[repr(C)]
+        #[derive(Debug, Copy, Clone)]
+        pub struct _GVoxContext {
+            _unused: [u8; 0],
+        }
+        pub type GVoxContext = _GVoxContext;
 
-    pub struct Context {
-        ctx: *mut GVoxContext,
+        pub const GVoxResult_GVOX_SUCCESS: GVoxResult = 0;
+        pub const GVoxResult_GVOX_ERROR_FAILED_TO_LOAD_FILE: GVoxResult = -1;
+        pub const GVoxResult_GVOX_ERROR_FAILED_TO_LOAD_FORMAT: GVoxResult = -2;
+        pub const GVoxResult_GVOX_ERROR_INVALID_FORMAT: GVoxResult = -3;
+        pub type GVoxResult = ::std::os::raw::c_int;
+        #[repr(C)]
+        #[derive(Debug, Copy, Clone)]
+        pub struct GVoxVoxel {
+            pub color: GVoxVoxel_Color,
+            pub id: u32,
+        }
+        #[repr(C)]
+        #[derive(Debug, Copy, Clone)]
+        pub struct GVoxVoxel_Color {
+            pub x: f32,
+            pub y: f32,
+            pub z: f32,
+        }
+
+        #[repr(C)]
+        #[derive(Debug, Copy, Clone)]
+        pub struct GVoxSceneNode {
+            pub size_x: usize,
+            pub size_y: usize,
+            pub size_z: usize,
+            pub voxels: *mut GVoxVoxel,
+        }
+
+        #[repr(C)]
+        #[derive(Debug, Copy, Clone)]
+        pub struct GVoxScene {
+            pub node_n: usize,
+            pub nodes: *mut GVoxSceneNode,
+        }
+
+        extern "C" {
+            pub fn gvox_create_context() -> *mut GVoxContext;
+            pub fn gvox_destroy_context(ctx: *mut GVoxContext);
+            pub fn gvox_push_root_path(ctx: *mut GVoxContext, path: *const ::std::os::raw::c_char);
+            pub fn gvox_pop_root_path(ctx: *mut GVoxContext);
+            pub fn gvox_get_result(ctx: *mut GVoxContext) -> GVoxResult;
+            pub fn gvox_get_result_message(
+                ctx: *mut GVoxContext,
+                str_buffer: *mut ::std::os::raw::c_char,
+                str_size: *mut usize,
+            );
+            pub fn gvox_pop_result(ctx: *mut GVoxContext);
+            pub fn gvox_load(
+                ctx: *mut GVoxContext,
+                filepath: *const ::std::os::raw::c_char,
+            ) -> GVoxScene;
+            pub fn gvox_load_from_raw(
+                ctx: *mut GVoxContext,
+                filepath: *const ::std::os::raw::c_char,
+                src_format: *const ::std::os::raw::c_char,
+            ) -> GVoxScene;
+            pub fn gvox_save(
+                ctx: *mut GVoxContext,
+                scene: GVoxScene,
+                filepath: *const ::std::os::raw::c_char,
+                dst_format: *const ::std::os::raw::c_char,
+            );
+            pub fn gvox_save_as_raw(
+                ctx: *mut GVoxContext,
+                scene: GVoxScene,
+                filepath: *const ::std::os::raw::c_char,
+                dst_format: *const ::std::os::raw::c_char,
+            );
+            pub fn gvox_destroy_scene(scene: GVoxScene);
+        }
     }
 
-    pub type Scene = GVoxScene;
+    pub struct Context {
+        ctx: *mut ffi::GVoxContext,
+    }
+
+    pub type Scene = ffi::GVoxScene;
 
     fn path_to_buf(path: &std::path::Path) -> Vec<u8> {
         let mut buf = Vec::new();
@@ -22,28 +100,28 @@ mod gvox {
 
     impl Context {
         pub fn new() -> Self {
-            let ctx = unsafe { gvox_create_context() };
+            let ctx = unsafe { ffi::gvox_create_context() };
             Context { ctx }
         }
 
         pub fn push_root_path(&self, path: &std::path::Path) {
             let path_buf = path_to_buf(path);
             let path_cstr = path_buf.as_ptr() as *const std::os::raw::c_char;
-            unsafe { gvox_push_root_path(self.ctx, path_cstr) }
+            unsafe { ffi::gvox_push_root_path(self.ctx, path_cstr) }
         }
 
         pub fn pop_root_path(&self) {
-            unsafe { gvox_pop_root_path(self.ctx) }
+            unsafe { ffi::gvox_pop_root_path(self.ctx) }
         }
 
         fn get_error(&self) -> String {
             unsafe {
                 let mut msg_size: usize = 0;
-                gvox_get_result_message(self.ctx, 0 as *mut i8, &mut msg_size);
+                ffi::gvox_get_result_message(self.ctx, 0 as *mut i8, &mut msg_size);
                 let mut buf: Vec<u8> = Vec::new();
                 buf.resize(msg_size, 0);
-                gvox_get_result_message(self.ctx, buf.as_mut_ptr() as *mut i8, &mut msg_size);
-                gvox_pop_result(self.ctx);
+                ffi::gvox_get_result_message(self.ctx, buf.as_mut_ptr() as *mut i8, &mut msg_size);
+                ffi::gvox_pop_result(self.ctx);
                 use std::str;
                 return match str::from_utf8(buf.as_slice()) {
                     Ok(v) => v.to_string(),
@@ -55,9 +133,9 @@ mod gvox {
         pub fn load(&self, path: &std::path::Path) -> Result<Scene, String> {
             let path_buf = path_to_buf(path);
             let path_cstr = path_buf.as_ptr() as *const std::os::raw::c_char;
-            let result = unsafe { gvox_load(self.ctx, path_cstr) };
+            let result = unsafe { ffi::gvox_load(self.ctx, path_cstr) };
 
-            if unsafe { gvox_get_result(self.ctx) != GVoxResult_GVOX_SUCCESS } {
+            if unsafe { ffi::gvox_get_result(self.ctx) != ffi::GVoxResult_GVOX_SUCCESS } {
                 return Err(self.get_error());
             }
 
@@ -72,9 +150,9 @@ mod gvox {
             let path_buf = path_to_buf(path);
             let path_cstr = path_buf.as_ptr() as *const std::os::raw::c_char;
             let str_cstr = src_format.as_ptr() as *const std::os::raw::c_char;
-            let result = unsafe { gvox_load_from_raw(self.ctx, path_cstr, str_cstr) };
+            let result = unsafe { ffi::gvox_load_from_raw(self.ctx, path_cstr, str_cstr) };
 
-            if unsafe { gvox_get_result(self.ctx) != GVoxResult_GVOX_SUCCESS } {
+            if unsafe { ffi::gvox_get_result(self.ctx) != ffi::GVoxResult_GVOX_SUCCESS } {
                 return Err(self.get_error());
             }
 
@@ -90,9 +168,9 @@ mod gvox {
             let path_buf = path_to_buf(path);
             let path_cstr = path_buf.as_ptr() as *const std::os::raw::c_char;
             let str_cstr = dst_format.as_ptr() as *const std::os::raw::c_char;
-            unsafe { gvox_save(self.ctx, *scene, path_cstr, str_cstr) }
+            unsafe { ffi::gvox_save(self.ctx, *scene, path_cstr, str_cstr) }
 
-            if unsafe { gvox_get_result(self.ctx) != GVoxResult_GVOX_SUCCESS } {
+            if unsafe { ffi::gvox_get_result(self.ctx) != ffi::GVoxResult_GVOX_SUCCESS } {
                 return Err(self.get_error());
             }
 
@@ -108,9 +186,9 @@ mod gvox {
             let path_buf = path_to_buf(path);
             let path_cstr = path_buf.as_ptr() as *const std::os::raw::c_char;
             let str_cstr = dst_format.as_ptr() as *const std::os::raw::c_char;
-            unsafe { gvox_save_as_raw(self.ctx, *scene, path_cstr, str_cstr) }
+            unsafe { ffi::gvox_save_as_raw(self.ctx, *scene, path_cstr, str_cstr) }
 
-            if unsafe { gvox_get_result(self.ctx) != GVoxResult_GVOX_SUCCESS } {
+            if unsafe { ffi::gvox_get_result(self.ctx) != ffi::GVoxResult_GVOX_SUCCESS } {
                 return Err(self.get_error());
             }
 
@@ -119,14 +197,14 @@ mod gvox {
 
         pub fn destroy_scene(&self, scene: Scene) {
             unsafe {
-                gvox_destroy_scene(scene);
+                ffi::gvox_destroy_scene(scene);
             }
         }
     }
 
     impl Drop for Context {
         fn drop(&mut self) {
-            unsafe { gvox_destroy_context(self.ctx) }
+            unsafe { ffi::gvox_destroy_context(self.ctx) }
         }
     }
 }
