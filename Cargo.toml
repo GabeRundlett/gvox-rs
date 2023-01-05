@@ -1,0 +1,15 @@
+[package]
+name = "gvox-rs"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Voxel file format parser"
+homepage = "https://github.com/GabeRundlett/gvox-rs"
+repository = "https://github.com/GabeRundlett/gvox-rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+
+[build-dependencies]
+bindgen = "0.63.0"
