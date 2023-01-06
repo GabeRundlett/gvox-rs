@@ -3,12 +3,12 @@
 fn main() {
     let dst = cmake::Config::new("gvox")
         .build_target("gvox")
-        .out_dir(".out")
+        .out_dir("_out")
         .profile("Release")
         .build();
     use std::env;
     println!(
-        "cargo:rustc-link-search={}/.out/build/Release",
+        "cargo:rustc-link-search={}/_out/build/Release",
         env::var_os("CARGO_MANIFEST_DIR")
             .unwrap()
             .to_str()
