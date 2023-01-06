@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-include(cmake/warnings.cmake)
+# include(cmake/warnings.cmake)
 
 if(GVOX_ENABLE_FILE_IO)
     list(APPEND VCPKG_MANIFEST_FEATURES "file-io")
@@ -85,7 +85,7 @@ target_include_directories(${PROJECT_NAME}
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
-set_project_warnings(${PROJECT_NAME})
+# set_project_warnings(${PROJECT_NAME})
 
 set(GVOX_FORMATS ${GVOX_DYNAMIC_FORMATS} ${GVOX_STATIC_FORMATS})
 
