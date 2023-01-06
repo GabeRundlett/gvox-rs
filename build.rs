@@ -1,4 +1,4 @@
-extern crate bindgen;
+// extern crate bindgen;
 
 fn main() {
     let dst = cmake::Config::new("gvox")
