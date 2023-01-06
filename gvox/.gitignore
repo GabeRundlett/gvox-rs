@@ -1,0 +1,10 @@
+.out*
+.vs*
+
+imgui.ini
+*.dot
+
+# Voxel files
+*.gvox
+*.vox
+*.vxl

@@ -15,12 +15,14 @@ mod ffi {
     pub const GVoxResult_GVOX_ERROR_FAILED_TO_LOAD_FORMAT: GVoxResult = -2;
     pub const GVoxResult_GVOX_ERROR_INVALID_FORMAT: GVoxResult = -3;
     pub type GVoxResult = ::std::os::raw::c_int;
+
     #[repr(C)]
     #[derive(Debug, Copy, Clone)]
     pub struct GVoxVoxel {
         pub color: GVoxVoxel_Color,
         pub id: u32,
     }
+
     #[repr(C)]
     #[derive(Debug, Copy, Clone)]
     pub struct GVoxVoxel_Color {
@@ -43,6 +45,13 @@ mod ffi {
     pub struct GVoxScene {
         pub node_n: usize,
         pub nodes: *mut GVoxSceneNode,
+    }
+
+    #[repr(C)]
+    #[derive(Debug, Copy, Clone)]
+    pub struct GVoxPayload {
+        pub size: usize,
+        pub data: *mut u8,
     }
 
     extern "C" {
@@ -78,7 +87,22 @@ mod ffi {
             filepath: *const ::std::os::raw::c_char,
             dst_format: *const ::std::os::raw::c_char,
         );
+        pub fn gvox_parse(
+            ctx: *mut GVoxContext,
+            payload: GVoxPayload,
+            src_format: *const ::std::os::raw::c_char,
+        ) -> GVoxScene;
+        pub fn gvox_serialize(
+            ctx: *mut GVoxContext,
+            scene: GVoxScene,
+            dst_format: *const ::std::os::raw::c_char,
+        ) -> GVoxPayload;
         pub fn gvox_destroy_scene(scene: GVoxScene);
+        pub fn gvox_destroy_payload(
+            ctx: *mut GVoxContext,
+            payload: GVoxPayload,
+            format: *const ::std::os::raw::c_char,
+        );
     }
 }
 
@@ -87,6 +111,8 @@ pub struct Context {
 }
 
 pub type Scene = ffi::GVoxScene;
+
+pub type Payload = ffi::GVoxPayload;
 
 fn path_to_buf(path: &std::path::Path) -> Vec<u8> {
     let mut buf = Vec::new();
@@ -122,10 +148,10 @@ impl Context {
             ffi::gvox_get_result_message(self.ctx, buf.as_mut_ptr() as *mut i8, &mut msg_size);
             ffi::gvox_pop_result(self.ctx);
             use std::str;
-            return match str::from_utf8(buf.as_slice()) {
+            match str::from_utf8(buf.as_slice()) {
                 Ok(v) => v.to_string(),
                 Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
-            };
+            }
         }
     }
 
@@ -135,10 +161,10 @@ impl Context {
         let result = unsafe { ffi::gvox_load(self.ctx, path_cstr) };
 
         if unsafe { ffi::gvox_get_result(self.ctx) != ffi::GVoxResult_GVOX_SUCCESS } {
-            return Err(self.get_error());
+            Err(self.get_error())
+        } else {
+            Ok(result)
         }
-
-        Ok(result)
     }
 
     pub fn load_from_raw(
@@ -152,10 +178,10 @@ impl Context {
         let result = unsafe { ffi::gvox_load_from_raw(self.ctx, path_cstr, str_cstr) };
 
         if unsafe { ffi::gvox_get_result(self.ctx) != ffi::GVoxResult_GVOX_SUCCESS } {
-            return Err(self.get_error());
+            Err(self.get_error())
+        } else {
+            Ok(result)
         }
-
-        Ok(result)
     }
 
     pub fn save(
@@ -170,10 +196,10 @@ impl Context {
         unsafe { ffi::gvox_save(self.ctx, *scene, path_cstr, str_cstr) }
 
         if unsafe { ffi::gvox_get_result(self.ctx) != ffi::GVoxResult_GVOX_SUCCESS } {
-            return Err(self.get_error());
+            Err(self.get_error())
+        } else {
+            Ok({})
         }
-
-        Ok({})
     }
 
     pub fn save_as_raw(
@@ -188,10 +214,38 @@ impl Context {
         unsafe { ffi::gvox_save_as_raw(self.ctx, *scene, path_cstr, str_cstr) }
 
         if unsafe { ffi::gvox_get_result(self.ctx) != ffi::GVoxResult_GVOX_SUCCESS } {
-            return Err(self.get_error());
+            Err(self.get_error())
+        } else {
+            Ok({})
         }
+    }
 
-        Ok({})
+    pub fn parse(&self, payload: &Payload, src_format: &String) -> Result<Scene, String> {
+        let str_cstr = src_format.as_ptr() as *const std::os::raw::c_char;
+        let result = unsafe { ffi::gvox_parse(self.ctx, *payload, str_cstr) };
+
+        if unsafe { ffi::gvox_get_result(self.ctx) != ffi::GVoxResult_GVOX_SUCCESS } {
+            Err(self.get_error())
+        } else {
+            Ok(result)
+        }
+    }
+    pub fn serialize(&self, scene: &Scene, dst_format: &String) -> Result<Payload, String> {
+        let str_cstr = dst_format.as_ptr() as *const std::os::raw::c_char;
+        let result = unsafe { ffi::gvox_serialize(self.ctx, *scene, str_cstr) };
+
+        if unsafe { ffi::gvox_get_result(self.ctx) != ffi::GVoxResult_GVOX_SUCCESS } {
+            Err(self.get_error())
+        } else {
+            Ok(result)
+        }
+    }
+
+    pub fn destroy_payload(&self, payload: Payload, format: &String) {
+        let str_cstr = format.as_ptr() as *const std::os::raw::c_char;
+        unsafe {
+            ffi::gvox_destroy_payload(self.ctx, payload, str_cstr);
+        }
     }
 
     pub fn destroy_scene(&self, scene: Scene) {
@@ -213,7 +267,10 @@ mod tests {
     fn gvox_rs_test() {
         let gvox_ctx = super::Context::new();
         gvox_ctx.push_root_path(std::path::Path::new("prebuilt"));
-        let scene = gvox_ctx.load(std::path::Path::new("scene.gvox"));
+        let scene = gvox_ctx.load_from_raw(
+            std::path::Path::new("scene.gvox"),
+            &String::from("ace_of_spades"),
+        );
         if scene.is_err() {
             println!("ERROR LOADING FILE: {}", scene.unwrap_err());
         } else {
