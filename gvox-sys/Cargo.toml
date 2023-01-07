@@ -1,6 +1,6 @@
 [package]
-name = "gvox-rs"
-version = "0.1.4"
+name = "gvox-sys"
+version = "0.0.1"
 edition = "2021"
 license = "MIT"
 description = "Voxel file format parser"
@@ -13,6 +13,7 @@ repository = "https://github.com/GabeRundlett/gvox-rs"
 # crate-type = ["rlib", "cdylib"]
 
 [dependencies]
-gvox-sys = { path = "gvox-sys", version = "0.0.1", default-features = false }
 
 [build-dependencies]
+cmake = "0.1.49"
+bindgen = "0.63.0"
