@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 # include(cmake/warnings.cmake)
+include(cmake/emscripten.cmake)
 
 if(GVOX_ENABLE_FILE_IO)
     list(APPEND VCPKG_MANIFEST_FEATURES "file-io")
