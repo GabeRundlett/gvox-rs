@@ -167,14 +167,12 @@ impl Context {
         }
     }
 
-    pub fn load_from_raw(
-        &self,
-        path: &std::path::Path,
-        src_format: &String,
-    ) -> Result<Scene, String> {
+    pub fn load_from_raw(&self, path: &std::path::Path, src_format: &str) -> Result<Scene, String> {
         let path_buf = path_to_buf(path);
         let path_cstr = path_buf.as_ptr() as *const std::os::raw::c_char;
-        let str_cstr = src_format.as_ptr() as *const std::os::raw::c_char;
+        let cstring =
+            std::ffi::CString::new(src_format).expect("Failed to convert Rust string to C string");
+        let str_cstr = cstring.as_ptr();
         let result = unsafe { ffi::gvox_load_from_raw(self.ctx, path_cstr, str_cstr) };
 
         if unsafe { ffi::gvox_get_result(self.ctx) != ffi::GVoxResult_GVOX_SUCCESS } {
@@ -188,11 +186,13 @@ impl Context {
         &self,
         scene: &Scene,
         path: &std::path::Path,
-        dst_format: &String,
+        dst_format: &str,
     ) -> Result<(), String> {
         let path_buf = path_to_buf(path);
         let path_cstr = path_buf.as_ptr() as *const std::os::raw::c_char;
-        let str_cstr = dst_format.as_ptr() as *const std::os::raw::c_char;
+        let cstring =
+            std::ffi::CString::new(dst_format).expect("Failed to convert Rust string to C string");
+        let str_cstr = cstring.as_ptr();
         unsafe { ffi::gvox_save(self.ctx, *scene, path_cstr, str_cstr) }
 
         if unsafe { ffi::gvox_get_result(self.ctx) != ffi::GVoxResult_GVOX_SUCCESS } {
@@ -206,11 +206,13 @@ impl Context {
         &self,
         scene: &Scene,
         path: &std::path::Path,
-        dst_format: &String,
+        dst_format: &str,
     ) -> Result<(), String> {
         let path_buf = path_to_buf(path);
         let path_cstr = path_buf.as_ptr() as *const std::os::raw::c_char;
-        let str_cstr = dst_format.as_ptr() as *const std::os::raw::c_char;
+        let cstring =
+            std::ffi::CString::new(dst_format).expect("Failed to convert Rust string to C string");
+        let str_cstr = cstring.as_ptr();
         unsafe { ffi::gvox_save_as_raw(self.ctx, *scene, path_cstr, str_cstr) }
 
         if unsafe { ffi::gvox_get_result(self.ctx) != ffi::GVoxResult_GVOX_SUCCESS } {
@@ -220,8 +222,10 @@ impl Context {
         }
     }
 
-    pub fn parse(&self, payload: &Payload, src_format: &String) -> Result<Scene, String> {
-        let str_cstr = src_format.as_ptr() as *const std::os::raw::c_char;
+    pub fn parse(&self, payload: &Payload, src_format: &str) -> Result<Scene, String> {
+        let cstring =
+            std::ffi::CString::new(src_format).expect("Failed to convert Rust string to C string");
+        let str_cstr = cstring.as_ptr();
         let result = unsafe { ffi::gvox_parse(self.ctx, *payload, str_cstr) };
 
         if unsafe { ffi::gvox_get_result(self.ctx) != ffi::GVoxResult_GVOX_SUCCESS } {
@@ -230,8 +234,10 @@ impl Context {
             Ok(result)
         }
     }
-    pub fn serialize(&self, scene: &Scene, dst_format: &String) -> Result<Payload, String> {
-        let str_cstr = dst_format.as_ptr() as *const std::os::raw::c_char;
+    pub fn serialize(&self, scene: &Scene, dst_format: &str) -> Result<Payload, String> {
+        let cstring =
+            std::ffi::CString::new(dst_format).expect("Failed to convert Rust string to C string");
+        let str_cstr = cstring.as_ptr();
         let result = unsafe { ffi::gvox_serialize(self.ctx, *scene, str_cstr) };
 
         if unsafe { ffi::gvox_get_result(self.ctx) != ffi::GVoxResult_GVOX_SUCCESS } {
@@ -241,8 +247,10 @@ impl Context {
         }
     }
 
-    pub fn destroy_payload(&self, payload: Payload, format: &String) {
-        let str_cstr = format.as_ptr() as *const std::os::raw::c_char;
+    pub fn destroy_payload(&self, payload: Payload, format: &str) {
+        let cstring =
+            std::ffi::CString::new(format).expect("Failed to convert Rust string to C string");
+        let str_cstr = cstring.as_ptr();
         unsafe {
             ffi::gvox_destroy_payload(self.ctx, payload, str_cstr);
         }
@@ -269,7 +277,7 @@ mod tests {
         gvox_ctx.push_root_path(std::path::Path::new("prebuilt"));
         let scene = gvox_ctx.load_from_raw(
             std::path::Path::new("scene.gvox"),
-            &String::from("ace_of_spades"),
+            "ace_of_spades",
         );
         if scene.is_err() {
             println!("ERROR LOADING FILE: {}", scene.unwrap_err());
