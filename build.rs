@@ -3,6 +3,7 @@
 fn main() {
     let dst = cmake::Config::new("gvox")
         .build_target("gvox")
+        .configure_arg("-DGVOX_ENABLE_FILE_IO=true")
         .out_dir("target/.out")
         .profile("Release")
         .build();
