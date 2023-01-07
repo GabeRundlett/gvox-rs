@@ -169,3 +169,9 @@ impl Drop for Context {
         unsafe { gvox_sys::gvox_destroy_context(self.ctx) }
     }
 }
+
+#[no_mangle]
+pub extern "C" fn add(left: i32, right: i32) -> i32 {
+    Context::new();
+    left + right
+}

@@ -3,6 +3,8 @@ extern crate bindgen;
 fn main() {
     let dst = cmake::Config::new("gvox")
         .build_target("gvox")
+        .generator("Ninja Multi-Config")
+        .configure_arg("-DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/clang-wasm-unknown-unknown.cmake")
         .configure_arg("-DGVOX_ENABLE_FILE_IO=true")
         .profile("Release")
         .build();
