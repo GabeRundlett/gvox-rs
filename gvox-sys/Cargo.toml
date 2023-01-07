@@ -4,8 +4,8 @@ version = "0.0.1"
 edition = "2021"
 license = "MIT"
 description = "Voxel file format parser"
-homepage = "https://github.com/GabeRundlett/gvox"
-repository = "https://github.com/GabeRundlett/gvox"
+homepage = "https://github.com/GabeRundlett/gvox-rs"
+repository = "https://github.com/GabeRundlett/gvox-rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
