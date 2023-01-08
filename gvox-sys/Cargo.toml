@@ -9,11 +9,6 @@ repository = "https://github.com/GabeRundlett/gvox-rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-# [lib]
-# crate-type = ["rlib", "cdylib"]
-
-[dependencies]
-
 [build-dependencies]
 cmake = "0.1.49"
 bindgen = "0.63.0"
