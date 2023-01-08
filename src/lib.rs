@@ -142,7 +142,7 @@ impl Context {
         }
     }
 
-    pub fn destroy_payload(&self, payload: &mut Payload, format: &str) {
+    pub fn destroy_payload(&self, payload: &Payload, format: &str) {
         let cstring =
             std::ffi::CString::new(format).expect("Failed to convert Rust string to C string");
         let str_cstr = cstring.as_ptr();
@@ -151,7 +151,7 @@ impl Context {
         }
     }
 
-    pub fn destroy_scene(&self, scene: &mut Scene) {
+    pub fn destroy_scene(&self, scene: &Scene) {
         unsafe {
             gvox_sys::gvox_destroy_scene(scene);
         }
