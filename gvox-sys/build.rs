@@ -1,13 +1,13 @@
 extern crate bindgen;
 
 fn main() {
-    if cfg!(target_family = "wasm") {
+    if std::env::var("CARGO_CFG_TARGET_ARCH") == Ok("wasm32".to_string()) {
         let dst = cmake::Config::new("gvox")
             .build_target("gvox")
             .generator("Ninja Multi-Config")
-            .configure_arg(
-                "-DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/wasi-llvm-unknown-unknown.cmake",
-            )
+            .configure_arg(format!("-DCMAKE_TOOLCHAIN_FILE={}/scripts/buildsystems/vcpkg.cmake", std::env::var("VCPKG_ROOT").unwrap()))
+            .configure_arg("-DVCPKG_TARGET_TRIPLET=wasm32-wasisdk")
+            .configure_arg(format!("-DVCPKG_CHAINLOAD_TOOLCHAIN_FILE={}/gvox/cmake/toolchains/wasi-llvm-unknown-unknown.cmake", std::env::current_dir().unwrap().display()))
             .profile("Release")
             .build();
         println!(
