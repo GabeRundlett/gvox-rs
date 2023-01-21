@@ -3,3 +3,6 @@
 #![allow(non_snake_case)]
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
+
+#[cfg(target_arch = "wasm32")]
+mod wasm_shim;

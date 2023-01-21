@@ -14,7 +14,6 @@ fn main() {
             "cargo:rustc-link-search={}/share/wasi-sysroot/lib/wasm32-wasi",
             env::var("WASI_SDK_PATH").unwrap()
         );
-        println!("cargo:rustc-link-lib=dylib=c");
         println!("cargo:rustc-link-lib=dylib=c++");
         println!("cargo:rustc-link-lib=dylib=c++abi");
         println!(
