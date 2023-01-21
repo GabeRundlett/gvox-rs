@@ -6,7 +6,7 @@ fn gvox_rs_test() {
     let bytes = include_bytes!("test.gvox");
     let payload_type_str = "gvox_u32_palette";
     let payload = gvox_rs::Payload {
-        size: bytes.len(),
+        size: bytes.len() as u64,
         data: bytes.as_ptr() as *mut u8,
     };
     let scene = gvox_ctx.parse(&payload, payload_type_str);
@@ -17,7 +17,7 @@ fn gvox_rs_test() {
         println!("node count: {}", scene.node_n);
         unsafe {
             for node_i in 0..scene.node_n {
-                let node = *(scene.nodes.add(node_i));
+                let node = *(scene.nodes.add(node_i as usize));
                 println!(
                     "node {} size: {}, {}, {}",
                     node_i, node.size_x, node.size_y, node.size_z
@@ -28,7 +28,7 @@ fn gvox_rs_test() {
                             let voxel_i = xi
                                 + yi * node.size_x
                                 + (node.size_z - 1 - zi) * node.size_x * node.size_y;
-                            let voxel = *(node.voxels.add(voxel_i));
+                            let voxel = *(node.voxels.add(voxel_i as usize));
                             print!(
                                 "\x1b[38;2;{0:03};{1:03};{2:03}m\x1b[48;2;{0:03};{1:03};{2:03}m__",
                                 (voxel.color.x * 255.0) as u32,
