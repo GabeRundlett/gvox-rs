@@ -5,10 +5,11 @@ fn main() {
         let dst = cmake::Config::new("gvox")
             .build_target("gvox")
             .generator("Ninja Multi-Config")
+            .configure_arg("-DGVOX_BUILD_FOR_RUST=1")
             .configure_arg(format!("-DCMAKE_TOOLCHAIN_FILE={}/scripts/buildsystems/vcpkg.cmake", std::env::var("VCPKG_ROOT").unwrap()))
             .configure_arg("-DVCPKG_TARGET_TRIPLET=wasm32-wasisdk")
             .configure_arg(format!("-DVCPKG_CHAINLOAD_TOOLCHAIN_FILE={}/gvox/cmake/toolchains/wasi-llvm-unknown-unknown.cmake", std::env::current_dir().unwrap().display()))
-            .profile("Release")
+            .profile(get_profile())
             .build();
         println!(
             "cargo:rustc-link-search={}/share/wasi-sysroot/lib/wasm32-wasi",
@@ -17,17 +18,22 @@ fn main() {
         println!("cargo:rustc-link-lib=dylib=c++");
         println!("cargo:rustc-link-lib=dylib=c++abi");
         println!(
-            "cargo:rustc-link-search=native={}/build/Release",
-            dst.display()
+            "cargo:rustc-link-search=native={}/build/{}",
+            dst.display(),
+            get_profile()
         );
     } else {
+        let static_crt = std::env::var("CARGO_ENCODED_RUSTFLAGS").unwrap_or_default().contains("target-feature=+crt-static");
         let dst = cmake::Config::new("gvox")
             .build_target("gvox")
-            .profile("Release")
+            .profile(get_profile())
+            .configure_arg("-DGVOX_BUILD_FOR_RUST=1")
+            .configure_arg(format!("-DGVOX_USE_STATIC_CRT={}", if static_crt { 1 } else { 0 }))
             .build();
         println!(
-            "cargo:rustc-link-search=native={}/build/Release",
-            dst.display()
+            "cargo:rustc-link-search=native={}/build/{}",
+            dst.display(),
+            get_profile()
         );
     }
     println!("cargo:rustc-link-lib=static=gvox");
@@ -46,4 +52,12 @@ fn main() {
     bindings
         .write_to_file(out_path.join("bindings.rs"))
         .expect("Couldn't write bindings!");
+}
+
+fn get_profile() -> &'static str {
+    match std::env::var("DEBUG").unwrap_or_default().as_str() {
+        "true" => "Debug",
+        "false" => "Release",
+        _ => panic!("Couldn't detect target profile for CMake.")
+    }
 }
