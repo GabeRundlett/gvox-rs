@@ -55,9 +55,13 @@ fn main() {
 }
 
 fn get_profile() -> &'static str {
-    match std::env::var("DEBUG").unwrap_or_default().as_str() {
-        "true" => "Debug",
-        "false" => "Release",
-        _ => panic!("Couldn't detect target profile for CMake.")
-    }
+    // For now, just use release. Thanks Douglas!
+    // https://github.com/rust-lang/rust/issues/39016
+    "Release"
+
+    // match std::env::var("DEBUG").unwrap_or_default().as_str() {
+    //     "true" => "Debug",
+    //     "false" => "Release",
+    //     _ => panic!("Couldn't detect target profile for CMake.")
+    // }
 }
