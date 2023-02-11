@@ -39,12 +39,12 @@ fn main() {
     println!("cargo:rustc-link-lib=static=gvox");
     use std::env;
     use std::path::PathBuf;
-    println!("cargo:rerun-if-changed=gvox/include/gvox/gvox.h");
+    println!("cargo:rerun-if-changed=src/gvox.h");
     let bindings = bindgen::Builder::default()
         .clang_arg("--target=x86_64-pc-windows-msvc")
         .clang_arg("--language=c")
         .clang_arg("-DGVOX_ENABLE_FILE_IO=0")
-        .header("gvox/include/gvox/gvox.h")
+        .header("src/gvox.h")
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
         .generate()
         .expect("Unable to generate bindings");

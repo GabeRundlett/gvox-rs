@@ -5,47 +5,43 @@
 #[cfg(test)]
 mod tests;
 
-pub use gvox_sys;
+use gvox_sys;
 
 pub struct Context {
-    ctx: *mut gvox_sys::GVoxContext,
+    ptr: *mut gvox_sys::GvoxContext,
+}
+pub struct AdapterContext {
+    ptr: *mut gvox_sys::GvoxAdapterContext,
 }
 
-pub type Scene = gvox_sys::GVoxScene;
+pub type InputAdapterInfo = gvox_sys::GvoxInputAdapterInfo;
+pub type InputAdapter = *mut gvox_sys::GvoxInputAdapter;
+pub type OutputAdapterInfo = gvox_sys::GvoxOutputAdapterInfo;
+pub type OutputAdapter = *mut gvox_sys::GvoxOutputAdapter;
+pub type ParseAdapterInfo = gvox_sys::GvoxParseAdapterInfo;
+pub type ParseAdapter = *mut gvox_sys::GvoxParseAdapter;
+pub type SerializeAdapterInfo = gvox_sys::GvoxSerializeAdapterInfo;
+pub type SerializeAdapter = *mut gvox_sys::GvoxSerializeAdapter;
 
-pub type Payload = gvox_sys::GVoxPayload;
-
-// fn path_to_buf(path: &std::path::Path) -> Vec<u8> {
-//     let mut buf = Vec::new();
-//     buf.extend(path.to_string_lossy().as_bytes());
-//     buf.push(0);
-//     buf
-// }
+pub type Offset3D = gvox_sys::GvoxOffset3D;
+pub type Extent3D = gvox_sys::GvoxExtent3D;
+pub type RegionRange = gvox_sys::GvoxRegionRange;
+pub type Region = gvox_sys::GvoxRegion;
 
 impl Context {
     pub fn new() -> Self {
         let ctx = unsafe { gvox_sys::gvox_create_context() };
-        Context { ctx }
+        Context { ptr: ctx }
     }
-
-    // pub fn push_root_path(&self, path: &std::path::Path) {
-    //     let path_buf = path_to_buf(path);
-    //     let path_cstr = path_buf.as_ptr() as *const std::os::raw::c_char;
-    //     unsafe { gvox_sys::gvox_push_root_path(self.ctx, path_cstr) }
-    // }
-
-    // pub fn pop_root_path(&self) {
-    //     unsafe { gvox_sys::gvox_pop_root_path(self.ctx) }
-    // }
 
     fn get_error(&self) -> String {
         unsafe {
             let mut msg_size: usize = 0;
-            gvox_sys::gvox_get_result_message(self.ctx, 0 as *mut i8, &mut msg_size);
+            gvox_sys::gvox_get_result_message(self.ptr, 0 as *mut i8, &mut msg_size);
             let mut buf: Vec<u8> = Vec::new();
             buf.resize(msg_size, 0);
-            gvox_sys::gvox_get_result_message(self.ctx, buf.as_mut_ptr() as *mut i8, &mut msg_size);
-            gvox_sys::gvox_pop_result(self.ctx);
+            gvox_sys::gvox_get_result_message(self.ptr, buf.as_mut_ptr() as *mut i8, &mut msg_size);
+            gvox_sys::gvox_pop_result(self.ptr);
             use std::str;
             match str::from_utf8(buf.as_slice()) {
                 Ok(v) => v.to_string(),
@@ -54,113 +50,128 @@ impl Context {
         }
     }
 
-    // pub fn load(&self, path: &std::path::Path) -> Result<Scene, String> {
-    //     let path_buf = path_to_buf(path);
-    //     let path_cstr = path_buf.as_ptr() as *const std::os::raw::c_char;
-    //     let result = unsafe { gvox_sys::gvox_load(self.ctx, path_cstr) };
-    //     if unsafe { gvox_sys::gvox_get_result(self.ctx) != gvox_sys::GVoxResult_GVOX_SUCCESS } {
-    //         Err(self.get_error())
-    //     } else {
-    //         Ok(result)
-    //     }
-    // }
-
-    // pub fn load_from_raw(&self, path: &std::path::Path, src_format: &str) -> Result<Scene, String> {
-    //     let path_buf = path_to_buf(path);
-    //     let path_cstr = path_buf.as_ptr() as *const std::os::raw::c_char;
-    //     let cstring =
-    //         std::ffi::CString::new(src_format).expect("Failed to convert Rust string to C string");
-    //     let str_cstr = cstring.as_ptr();
-    //     let result = unsafe { gvox_sys::gvox_load_from_raw(self.ctx, path_cstr, str_cstr) };
-    //     if unsafe { gvox_sys::gvox_get_result(self.ctx) != gvox_sys::GVoxResult_GVOX_SUCCESS } {
-    //         Err(self.get_error())
-    //     } else {
-    //         Ok(result)
-    //     }
-    // }
-
-    // pub fn save(
-    //     &self,
-    //     scene: &Scene,
-    //     path: &std::path::Path,
-    //     dst_format: &str,
-    // ) -> Result<(), String> {
-    //     let path_buf = path_to_buf(path);
-    //     let path_cstr = path_buf.as_ptr() as *const std::os::raw::c_char;
-    //     let cstring =
-    //         std::ffi::CString::new(dst_format).expect("Failed to convert Rust string to C string");
-    //     let str_cstr = cstring.as_ptr();
-    //     unsafe { gvox_sys::gvox_save(self.ctx, *scene, path_cstr, str_cstr) }
-    //     if unsafe { gvox_sys::gvox_get_result(self.ctx) != gvox_sys::GVoxResult_GVOX_SUCCESS } {
-    //         Err(self.get_error())
-    //     } else {
-    //         Ok({})
-    //     }
-    // }
-
-    // pub fn save_as_raw(
-    //     &self,
-    //     scene: &Scene,
-    //     path: &std::path::Path,
-    //     dst_format: &str,
-    // ) -> Result<(), String> {
-    //     let path_buf = path_to_buf(path);
-    //     let path_cstr = path_buf.as_ptr() as *const std::os::raw::c_char;
-    //     let cstring =
-    //         std::ffi::CString::new(dst_format).expect("Failed to convert Rust string to C string");
-    //     let str_cstr = cstring.as_ptr();
-    //     unsafe { gvox_sys::gvox_save_as_raw(self.ctx, *scene, path_cstr, str_cstr) }
-    //     if unsafe { gvox_sys::gvox_get_result(self.ctx) != gvox_sys::GVoxResult_GVOX_SUCCESS } {
-    //         Err(self.get_error())
-    //     } else {
-    //         Ok({})
-    //     }
-    // }
-
-    pub fn parse(&self, payload: &Payload, src_format: &str) -> Result<Scene, String> {
-        let cstring =
-            std::ffi::CString::new(src_format).expect("Failed to convert Rust string to C string");
-        let str_cstr = cstring.as_ptr();
-        let result = unsafe { gvox_sys::gvox_parse(self.ctx, payload, str_cstr) };
-
-        if unsafe { gvox_sys::gvox_get_result(self.ctx) != gvox_sys::GVoxResult_GVOX_SUCCESS } {
-            Err(self.get_error())
-        } else {
-            Ok(result)
-        }
+    pub fn register_input_adapter(&self, adapter_info: &InputAdapterInfo) -> InputAdapter {
+        unsafe { gvox_sys::gvox_register_input_adapter(self.ptr, adapter_info) }
     }
-    pub fn serialize(&self, scene: &Scene, dst_format: &str) -> Result<Payload, String> {
-        let cstring =
-            std::ffi::CString::new(dst_format).expect("Failed to convert Rust string to C string");
+    pub fn get_input_adapter(&self, adapter_name: &str) -> InputAdapter {
+        let cstring = std::ffi::CString::new(adapter_name)
+            .expect("Failed to convert Rust string to C string");
         let str_cstr = cstring.as_ptr();
-        let result = unsafe { gvox_sys::gvox_serialize(self.ctx, scene, str_cstr) };
-
-        if unsafe { gvox_sys::gvox_get_result(self.ctx) != gvox_sys::GVoxResult_GVOX_SUCCESS } {
-            Err(self.get_error())
-        } else {
-            Ok(result)
-        }
+        unsafe { gvox_sys::gvox_get_input_adapter(self.ptr, str_cstr) }
+    }
+    pub fn register_output_adapter(&self, adapter_info: &OutputAdapterInfo) -> OutputAdapter {
+        unsafe { gvox_sys::gvox_register_output_adapter(self.ptr, adapter_info) }
+    }
+    pub fn get_output_adapter(&self, adapter_name: &str) -> OutputAdapter {
+        let cstring = std::ffi::CString::new(adapter_name)
+            .expect("Failed to convert Rust string to C string");
+        let str_cstr = cstring.as_ptr();
+        unsafe { gvox_sys::gvox_get_output_adapter(self.ptr, str_cstr) }
+    }
+    pub fn register_parse_adapter(&self, adapter_info: &ParseAdapterInfo) -> ParseAdapter {
+        unsafe { gvox_sys::gvox_register_parse_adapter(self.ptr, adapter_info) }
+    }
+    pub fn get_parse_adapter(&self, adapter_name: &str) -> ParseAdapter {
+        let cstring = std::ffi::CString::new(adapter_name)
+            .expect("Failed to convert Rust string to C string");
+        let str_cstr = cstring.as_ptr();
+        unsafe { gvox_sys::gvox_get_parse_adapter(self.ptr, str_cstr) }
+    }
+    pub fn register_serialize_adapter(
+        &self,
+        adapter_info: &SerializeAdapterInfo,
+    ) -> SerializeAdapter {
+        unsafe { gvox_sys::gvox_register_serialize_adapter(self.ptr, adapter_info) }
+    }
+    pub fn get_serialize_adapter(&self, adapter_name: &str) -> SerializeAdapter {
+        let cstring = std::ffi::CString::new(adapter_name)
+            .expect("Failed to convert Rust string to C string");
+        let str_cstr = cstring.as_ptr();
+        unsafe { gvox_sys::gvox_get_serialize_adapter(self.ptr, str_cstr) }
     }
 
-    pub fn destroy_payload(&self, payload: &Payload, format: &str) {
-        let cstring =
-            std::ffi::CString::new(format).expect("Failed to convert Rust string to C string");
-        let str_cstr = cstring.as_ptr();
-        unsafe {
-            gvox_sys::gvox_destroy_payload(self.ctx, payload, str_cstr);
-        }
+    pub fn create_adapter_context(
+        &self,
+        input_adapter: Option<InputAdapter>,
+        input_config: *mut std::os::raw::c_void,
+        output_adapter: Option<OutputAdapter>,
+        output_config: *mut std::os::raw::c_void,
+        parse_adapter: Option<ParseAdapter>,
+        parse_config: *mut std::os::raw::c_void,
+        serialize_adapter: Option<SerializeAdapter>,
+        serialize_config: *mut std::os::raw::c_void,
+    ) -> AdapterContext {
+        use std::ptr::null_mut;
+        let result = unsafe {
+            gvox_sys::gvox_create_adapter_context(
+                self.ptr,
+                input_adapter.unwrap_or(null_mut() as InputAdapter),
+                input_config,
+                // (input_config
+                //     .as_mut()
+                //     .unwrap_or(&mut *(null_mut() as *mut InputConfigT))
+                //     as *mut InputConfigT) as *mut std::os::raw::c_void,
+                output_adapter.unwrap_or(null_mut() as OutputAdapter),
+                output_config,
+                // (output_config
+                //     .as_mut()
+                //     .unwrap_or(&mut *(null_mut() as *mut OutputConfigT))
+                //     as *mut OutputConfigT) as *mut std::os::raw::c_void,
+                parse_adapter.unwrap_or(null_mut() as ParseAdapter),
+                parse_config,
+                // (parse_config
+                //     .as_mut()
+                //     .unwrap_or(&mut *(null_mut() as *mut ParseConfigT))
+                //     as *mut ParseConfigT) as *mut std::os::raw::c_void,
+                serialize_adapter.unwrap_or(null_mut() as SerializeAdapter),
+                serialize_config,
+                // (serialize_config
+                //     .as_mut()
+                //     .unwrap_or(&mut *(null_mut() as *mut SerializeConfigT))
+                //     as *mut SerializeConfigT) as *mut std::os::raw::c_void,
+            )
+        };
+        AdapterContext { ptr: result }
     }
 
-    pub fn destroy_scene(&self, scene: &Scene) {
-        unsafe {
-            gvox_sys::gvox_destroy_scene(scene);
-        }
+    // GvoxRegion gvox_load_region(GvoxAdapterContext *ctx, GvoxOffset3D const *offset, uint32_t channel_id);
+    // void gvox_unload_region(GvoxAdapterContext *ctx, GvoxRegion *region);
+    // uint32_t gvox_sample_region(GvoxAdapterContext *ctx, GvoxRegion *region, GvoxOffset3D const *offset, uint32_t channel_id);
+    // uint32_t gvox_query_region_flags(GvoxAdapterContext *ctx, GvoxRegionRange const *range, uint32_t channel_id);
+
+    // void gvox_adapter_push_error(GvoxAdapterContext *ctx, GvoxResult result_code, char const *message);
+
+    // void gvox_input_adapter_set_user_pointer(GvoxAdapterContext *ctx, void *ptr);
+    // void gvox_output_adapter_set_user_pointer(GvoxAdapterContext *ctx, void *ptr);
+    // void gvox_parse_adapter_set_user_pointer(GvoxAdapterContext *ctx, void *ptr);
+    // void gvox_serialize_adapter_set_user_pointer(GvoxAdapterContext *ctx, void *ptr);
+
+    // void *gvox_input_adapter_get_user_pointer(GvoxAdapterContext *ctx);
+    // void *gvox_output_adapter_get_user_pointer(GvoxAdapterContext *ctx);
+    // void *gvox_parse_adapter_get_user_pointer(GvoxAdapterContext *ctx);
+    // void *gvox_serialize_adapter_get_user_pointer(GvoxAdapterContext *ctx);
+
+    // void gvox_input_read(GvoxAdapterContext *ctx, size_t position, size_t size, void *data);
+
+    // void gvox_output_write(GvoxAdapterContext *ctx, size_t position, size_t size, void const *data);
+    // void gvox_output_reserve(GvoxAdapterContext *ctx, size_t size);
+}
+
+impl AdapterContext {
+    pub fn gvox_translate_region(&self, range: &RegionRange, channel_flags: u32) {
+        unsafe { gvox_sys::gvox_translate_region(self.ptr, range, channel_flags) }
     }
 }
 
 impl Drop for Context {
     fn drop(&mut self) {
-        unsafe { gvox_sys::gvox_destroy_context(self.ctx) }
+        unsafe { gvox_sys::gvox_destroy_context(self.ptr) }
+    }
+}
+
+impl Drop for AdapterContext {
+    fn drop(&mut self) {
+        unsafe { gvox_sys::gvox_destroy_adapter_context(self.ptr) }
     }
 }
 
