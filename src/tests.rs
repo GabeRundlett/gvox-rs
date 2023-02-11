@@ -1,4 +1,4 @@
-use std::ptr::{null, null_mut};
+use std::ptr::null_mut;
 
 use crate as gvox_rs;
 mod procedural_parse;
@@ -41,21 +41,23 @@ fn gvox_rs_test_procedural() {
         channel_id: gvox_sys::GVOX_CHANNEL_ID_COLOR,
         non_color_max_value: 0,
     };
-    let adapter_ctx = gvox_ctx.create_adapter_context(
-        None,
-        null_mut(),
-        // Some(i_adapter),
-        // &mut i_config as *mut gvox_sys::GvoxByteBufferInputAdapterConfig
-        //     as *mut std::os::raw::c_void,
-        Some(o_adapter),
-        &mut o_config as *mut gvox_sys::GvoxByteBufferOutputAdapterConfig
-            as *mut std::os::raw::c_void,
-        Some(p_adapter),
-        null_mut(),
-        Some(s_adapter),
-        &mut s_config as *mut gvox_sys::GvoxColoredTextSerializeAdapterConfig
-            as *mut std::os::raw::c_void,
-    );
+    let adapter_ctx = gvox_ctx
+        .create_adapter_context(
+            None,
+            null_mut(),
+            // Some(i_adapter),
+            // &mut i_config as *mut gvox_sys::GvoxByteBufferInputAdapterConfig
+            //     as *mut std::os::raw::c_void,
+            Some(o_adapter),
+            &mut o_config as *mut gvox_sys::GvoxByteBufferOutputAdapterConfig
+                as *mut std::os::raw::c_void,
+            Some(p_adapter),
+            null_mut(),
+            Some(s_adapter),
+            &mut s_config as *mut gvox_sys::GvoxColoredTextSerializeAdapterConfig
+                as *mut std::os::raw::c_void,
+        )
+        .expect("Failed to create adapter context");
     adapter_ctx.gvox_translate_region(
         &gvox_rs::RegionRange {
             offset: gvox_rs::Offset3D {
@@ -67,6 +69,10 @@ fn gvox_rs_test_procedural() {
         },
         gvox_sys::GVOX_CHANNEL_BIT_COLOR,
     );
+    match gvox_ctx.get_error() {
+        Ok(_) => {}
+        Err(e) => println!("Error while translating: {}", e),
+    }
     let s = unsafe {
         let slice = std::slice::from_raw_parts(o_buffer_ptr, o_buffer_size);
         std::str::from_utf8(slice).expect("bad string slice")

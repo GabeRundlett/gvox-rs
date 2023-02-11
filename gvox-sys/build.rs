@@ -7,6 +7,7 @@ fn main() {
             .generator("Ninja Multi-Config")
             .configure_arg("-DGVOX_BUILD_FOR_RUST=1")
             .configure_arg(format!("-DCMAKE_TOOLCHAIN_FILE={}/scripts/buildsystems/vcpkg.cmake", std::env::var("VCPKG_ROOT").unwrap()))
+            .configure_arg(format!("-DVCPKG_OVERLAY_TRIPLETS={}/gvox/cmake/vcpkg_triplets", std::env::current_dir().unwrap().display()))
             .configure_arg("-DVCPKG_TARGET_TRIPLET=wasm32-wasisdk")
             .configure_arg(format!("-DVCPKG_CHAINLOAD_TOOLCHAIN_FILE={}/gvox/cmake/toolchains/wasi-llvm-unknown-unknown.cmake", std::env::current_dir().unwrap().display()))
             .profile(get_profile())
@@ -23,12 +24,17 @@ fn main() {
             get_profile()
         );
     } else {
-        let static_crt = std::env::var("CARGO_ENCODED_RUSTFLAGS").unwrap_or_default().contains("target-feature=+crt-static");
+        let static_crt = std::env::var("CARGO_ENCODED_RUSTFLAGS")
+            .unwrap_or_default()
+            .contains("target-feature=+crt-static");
         let dst = cmake::Config::new("gvox")
             .build_target("gvox")
             .profile(get_profile())
             .configure_arg("-DGVOX_BUILD_FOR_RUST=1")
-            .configure_arg(format!("-DGVOX_USE_STATIC_CRT={}", if static_crt { 1 } else { 0 }))
+            .configure_arg(format!(
+                "-DGVOX_USE_STATIC_CRT={}",
+                if static_crt { 1 } else { 0 }
+            ))
             .build();
         println!(
             "cargo:rustc-link-search=native={}/build/{}",

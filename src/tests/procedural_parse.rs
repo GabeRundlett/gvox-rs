@@ -1,5 +1,3 @@
-use crate as gvox_rs;
-
 fn stable_rand(x: f32) -> f32 {
     ((x * 91.3458).sin() * 47453.5453) % 1.0
 }
