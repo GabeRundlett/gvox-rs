@@ -7,33 +7,77 @@ mod tests;
 
 use gvox_sys;
 
+pub const RESULT_SUCCESS: gvox_sys::GvoxResult = gvox_sys::GvoxResult_GVOX_RESULT_SUCCESS;
+pub const RESULT_ERROR_UNKNOWN: gvox_sys::GvoxResult =
+    gvox_sys::GvoxResult_GVOX_RESULT_ERROR_UNKNOWN;
+pub const RESULT_ERROR_INVALID_PARAMETER: gvox_sys::GvoxResult =
+    gvox_sys::GvoxResult_GVOX_RESULT_ERROR_INVALID_PARAMETER;
+pub const RESULT_ERROR_INPUT_ADAPTER: gvox_sys::GvoxResult =
+    gvox_sys::GvoxResult_GVOX_RESULT_ERROR_INPUT_ADAPTER;
+pub const RESULT_ERROR_OUTPUT_ADAPTER: gvox_sys::GvoxResult =
+    gvox_sys::GvoxResult_GVOX_RESULT_ERROR_OUTPUT_ADAPTER;
+pub const RESULT_ERROR_PARSE_ADAPTER: gvox_sys::GvoxResult =
+    gvox_sys::GvoxResult_GVOX_RESULT_ERROR_PARSE_ADAPTER;
+pub const RESULT_ERROR_SERIALIZE_ADAPTER: gvox_sys::GvoxResult =
+    gvox_sys::GvoxResult_GVOX_RESULT_ERROR_SERIALIZE_ADAPTER;
+pub const RESULT_ERROR_PARSE_ADAPTER_INVALID_INPUT: gvox_sys::GvoxResult =
+    gvox_sys::GvoxResult_GVOX_RESULT_ERROR_PARSE_ADAPTER_INVALID_INPUT;
+pub const RESULT_ERROR_PARSE_ADAPTER_REQUESTED_CHANNEL_NOT_PRESENT: gvox_sys::GvoxResult =
+    gvox_sys::GvoxResult_GVOX_RESULT_ERROR_PARSE_ADAPTER_REQUESTED_CHANNEL_NOT_PRESENT;
+pub const RESULT_ERROR_SERIALIZE_ADAPTER_UNREPRESENTABLE_DATA: gvox_sys::GvoxResult =
+    gvox_sys::GvoxResult_GVOX_RESULT_ERROR_SERIALIZE_ADAPTER_UNREPRESENTABLE_DATA;
+
+pub const CHANNEL_ID_COLOR: u32 = gvox_sys::GVOX_CHANNEL_ID_COLOR;
+pub const CHANNEL_ID_NORMAL: u32 = gvox_sys::GVOX_CHANNEL_ID_NORMAL;
+pub const CHANNEL_ID_MATERIAL_ID: u32 = gvox_sys::GVOX_CHANNEL_ID_MATERIAL_ID;
+pub const CHANNEL_ID_ROUGHNESS: u32 = gvox_sys::GVOX_CHANNEL_ID_ROUGHNESS;
+pub const CHANNEL_ID_METALNESS: u32 = gvox_sys::GVOX_CHANNEL_ID_METALNESS;
+pub const CHANNEL_ID_TRANSPARENCY: u32 = gvox_sys::GVOX_CHANNEL_ID_TRANSPARENCY;
+pub const CHANNEL_ID_IOR: u32 = gvox_sys::GVOX_CHANNEL_ID_IOR;
+pub const CHANNEL_ID_EMISSIVE_COLOR: u32 = gvox_sys::GVOX_CHANNEL_ID_EMISSIVE_COLOR;
+pub const CHANNEL_ID_EMISSIVE_POWER: u32 = gvox_sys::GVOX_CHANNEL_ID_EMISSIVE_POWER;
+pub const CHANNEL_ID_HARDNESS: u32 = gvox_sys::GVOX_CHANNEL_ID_HARDNESS;
+pub const CHANNEL_ID_LAST_STANDARD: u32 = gvox_sys::GVOX_CHANNEL_ID_LAST_STANDARD;
+pub const CHANNEL_BIT_COLOR: u32 = gvox_sys::GVOX_CHANNEL_BIT_COLOR;
+pub const CHANNEL_BIT_NORMAL: u32 = gvox_sys::GVOX_CHANNEL_BIT_NORMAL;
+pub const CHANNEL_BIT_MATERIAL_ID: u32 = gvox_sys::GVOX_CHANNEL_BIT_MATERIAL_ID;
+pub const CHANNEL_BIT_ROUGHNESS: u32 = gvox_sys::GVOX_CHANNEL_BIT_ROUGHNESS;
+pub const CHANNEL_BIT_METALNESS: u32 = gvox_sys::GVOX_CHANNEL_BIT_METALNESS;
+pub const CHANNEL_BIT_TRANSPARENCY: u32 = gvox_sys::GVOX_CHANNEL_BIT_TRANSPARENCY;
+pub const CHANNEL_BIT_IOR: u32 = gvox_sys::GVOX_CHANNEL_BIT_IOR;
+pub const CHANNEL_BIT_EMISSIVE_COLOR: u32 = gvox_sys::GVOX_CHANNEL_BIT_EMISSIVE_COLOR;
+pub const CHANNEL_BIT_EMISSIVE_POWER: u32 = gvox_sys::GVOX_CHANNEL_BIT_EMISSIVE_POWER;
+pub const CHANNEL_BIT_HARDNESS: u32 = gvox_sys::GVOX_CHANNEL_BIT_HARDNESS;
+pub const CHANNEL_BIT_LAST_STANDARD: u32 = gvox_sys::GVOX_CHANNEL_BIT_LAST_STANDARD;
+
+pub const REGION_FLAG_UNIFORM: u32 = gvox_sys::GVOX_REGION_FLAG_UNIFORM;
+
 pub struct Context {
     ptr: *mut gvox_sys::GvoxContext,
 }
+pub type Adapter = *mut gvox_sys::GvoxAdapter;
+
 pub struct AdapterContext {
     ptr: *mut gvox_sys::GvoxAdapterContext,
 }
-
-pub type InputAdapterInfo = gvox_sys::GvoxInputAdapterInfo;
-pub type InputAdapter = *mut gvox_sys::GvoxInputAdapter;
-pub type OutputAdapterInfo = gvox_sys::GvoxOutputAdapterInfo;
-pub type OutputAdapter = *mut gvox_sys::GvoxOutputAdapter;
-pub type ParseAdapterInfo = gvox_sys::GvoxParseAdapterInfo;
-pub type ParseAdapter = *mut gvox_sys::GvoxParseAdapter;
-pub type SerializeAdapterInfo = gvox_sys::GvoxSerializeAdapterInfo;
-pub type SerializeAdapter = *mut gvox_sys::GvoxSerializeAdapter;
 
 pub type Offset3D = gvox_sys::GvoxOffset3D;
 pub type Extent3D = gvox_sys::GvoxExtent3D;
 pub type RegionRange = gvox_sys::GvoxRegionRange;
 pub type Region = gvox_sys::GvoxRegion;
 
+pub type AdapterBaseInfo = gvox_sys::GvoxAdapterBaseInfo;
+pub type InputAdapterInfo = gvox_sys::GvoxInputAdapterInfo;
+pub type OutputAdapterInfo = gvox_sys::GvoxOutputAdapterInfo;
+pub type ParseAdapterInfo = gvox_sys::GvoxParseAdapterInfo;
+pub type SerializeAdapterInfo = gvox_sys::GvoxSerializeAdapterInfo;
+
 impl Context {
     pub fn new() -> Self {
         let ctx = unsafe { gvox_sys::gvox_create_context() };
         Context { ptr: ctx }
     }
-    pub fn get_error(&self) -> Result<(), String> {
+    pub fn get_error(&self) -> ::std::result::Result<(), String> {
         unsafe {
             if gvox_sys::gvox_get_result(self.ptr) != gvox_sys::GvoxResult_GVOX_RESULT_SUCCESS {
                 let mut msg_size: usize = 0;
@@ -56,111 +100,80 @@ impl Context {
             }
         }
     }
-    pub fn register_input_adapter(&self, adapter_info: &InputAdapterInfo) -> InputAdapter {
+    pub fn register_input_adapter(&self, adapter_info: &InputAdapterInfo) -> Adapter {
         unsafe { gvox_sys::gvox_register_input_adapter(self.ptr, adapter_info) }
     }
-    pub fn get_input_adapter(&self, adapter_name: &str) -> InputAdapter {
+    pub fn get_input_adapter(&self, adapter_name: &str) -> Adapter {
         let cstring = std::ffi::CString::new(adapter_name)
             .expect("Failed to convert Rust string to C string");
         let str_cstr = cstring.as_ptr();
         unsafe { gvox_sys::gvox_get_input_adapter(self.ptr, str_cstr) }
     }
-    pub fn register_output_adapter(&self, adapter_info: &OutputAdapterInfo) -> OutputAdapter {
+    pub fn register_output_adapter(&self, adapter_info: &OutputAdapterInfo) -> Adapter {
         unsafe { gvox_sys::gvox_register_output_adapter(self.ptr, adapter_info) }
     }
-    pub fn get_output_adapter(&self, adapter_name: &str) -> OutputAdapter {
+    pub fn get_output_adapter(&self, adapter_name: &str) -> Adapter {
         let cstring = std::ffi::CString::new(adapter_name)
             .expect("Failed to convert Rust string to C string");
         let str_cstr = cstring.as_ptr();
         unsafe { gvox_sys::gvox_get_output_adapter(self.ptr, str_cstr) }
     }
-    pub fn register_parse_adapter(&self, adapter_info: &ParseAdapterInfo) -> ParseAdapter {
+    pub fn register_parse_adapter(&self, adapter_info: &ParseAdapterInfo) -> Adapter {
         unsafe { gvox_sys::gvox_register_parse_adapter(self.ptr, adapter_info) }
     }
-    pub fn get_parse_adapter(&self, adapter_name: &str) -> ParseAdapter {
+    pub fn get_parse_adapter(&self, adapter_name: &str) -> Adapter {
         let cstring = std::ffi::CString::new(adapter_name)
             .expect("Failed to convert Rust string to C string");
         let str_cstr = cstring.as_ptr();
         unsafe { gvox_sys::gvox_get_parse_adapter(self.ptr, str_cstr) }
     }
-    pub fn register_serialize_adapter(
-        &self,
-        adapter_info: &SerializeAdapterInfo,
-    ) -> SerializeAdapter {
+    pub fn register_serialize_adapter(&self, adapter_info: &SerializeAdapterInfo) -> Adapter {
         unsafe { gvox_sys::gvox_register_serialize_adapter(self.ptr, adapter_info) }
     }
-    pub fn get_serialize_adapter(&self, adapter_name: &str) -> SerializeAdapter {
+    pub fn get_serialize_adapter(&self, adapter_name: &str) -> Adapter {
         let cstring = std::ffi::CString::new(adapter_name)
             .expect("Failed to convert Rust string to C string");
         let str_cstr = cstring.as_ptr();
         unsafe { gvox_sys::gvox_get_serialize_adapter(self.ptr, str_cstr) }
     }
-    pub fn create_adapter_context(
+    pub fn create_adapter_context<ConfigT>(
         &self,
-        input_adapter: Option<InputAdapter>,
-        input_config: *mut std::os::raw::c_void,
-        output_adapter: Option<OutputAdapter>,
-        output_config: *mut std::os::raw::c_void,
-        parse_adapter: Option<ParseAdapter>,
-        parse_config: *mut std::os::raw::c_void,
-        serialize_adapter: Option<SerializeAdapter>,
-        serialize_config: *mut std::os::raw::c_void,
-    ) -> Result<AdapterContext, String> {
+        adapter: &Option<Adapter>,
+        config: Option<ConfigT>,
+    ) -> std::result::Result<AdapterContext, String> {
         use std::ptr::null_mut;
         let result = unsafe {
             gvox_sys::gvox_create_adapter_context(
                 self.ptr,
-                input_adapter.unwrap_or(null_mut() as InputAdapter),
-                input_config,
-                // (input_config
-                //     .as_mut()
-                //     .unwrap_or(&mut *(null_mut() as *mut InputConfigT))
-                //     as *mut InputConfigT) as *mut std::os::raw::c_void,
-                output_adapter.unwrap_or(null_mut() as OutputAdapter),
-                output_config,
-                // (output_config
-                //     .as_mut()
-                //     .unwrap_or(&mut *(null_mut() as *mut OutputConfigT))
-                //     as *mut OutputConfigT) as *mut std::os::raw::c_void,
-                parse_adapter.unwrap_or(null_mut() as ParseAdapter),
-                parse_config,
-                // (parse_config
-                //     .as_mut()
-                //     .unwrap_or(&mut *(null_mut() as *mut ParseConfigT))
-                //     as *mut ParseConfigT) as *mut std::os::raw::c_void,
-                serialize_adapter.unwrap_or(null_mut() as SerializeAdapter),
-                serialize_config,
-                // (serialize_config
-                //     .as_mut()
-                //     .unwrap_or(&mut *(null_mut() as *mut SerializeConfigT))
-                //     as *mut SerializeConfigT) as *mut std::os::raw::c_void,
+                adapter.unwrap_or(null_mut() as Adapter),
+                match config {
+                    Some(mut c) => (&mut c) as *mut ConfigT as *mut std::os::raw::c_void,
+                    None => null_mut(),
+                },
             )
         };
         self.get_error()?;
         Ok(AdapterContext { ptr: result })
     }
-
-    // GvoxRegion gvox_load_region(GvoxAdapterContext *ctx, GvoxOffset3D const *offset, uint32_t channel_id);
-    // void gvox_unload_region(GvoxAdapterContext *ctx, GvoxRegion *region);
-    // uint32_t gvox_sample_region(GvoxAdapterContext *ctx, GvoxRegion *region, GvoxOffset3D const *offset, uint32_t channel_id);
-    // uint32_t gvox_query_region_flags(GvoxAdapterContext *ctx, GvoxRegionRange const *range, uint32_t channel_id);
-    // void gvox_adapter_push_error(GvoxAdapterContext *ctx, GvoxResult result_code, char const *message);
-    // void gvox_input_adapter_set_user_pointer(GvoxAdapterContext *ctx, void *ptr);
-    // void gvox_output_adapter_set_user_pointer(GvoxAdapterContext *ctx, void *ptr);
-    // void gvox_parse_adapter_set_user_pointer(GvoxAdapterContext *ctx, void *ptr);
-    // void gvox_serialize_adapter_set_user_pointer(GvoxAdapterContext *ctx, void *ptr);
-    // void *gvox_input_adapter_get_user_pointer(GvoxAdapterContext *ctx);
-    // void *gvox_output_adapter_get_user_pointer(GvoxAdapterContext *ctx);
-    // void *gvox_parse_adapter_get_user_pointer(GvoxAdapterContext *ctx);
-    // void *gvox_serialize_adapter_get_user_pointer(GvoxAdapterContext *ctx);
-    // void gvox_input_read(GvoxAdapterContext *ctx, size_t position, size_t size, void *data);
-    // void gvox_output_write(GvoxAdapterContext *ctx, size_t position, size_t size, void const *data);
-    // void gvox_output_reserve(GvoxAdapterContext *ctx, size_t size);
 }
 
-impl AdapterContext {
-    pub fn gvox_translate_region(&self, range: &RegionRange, channel_flags: u32) {
-        unsafe { gvox_sys::gvox_translate_region(self.ptr, range, channel_flags) }
+pub fn blit_region(
+    input_ctx: &AdapterContext,
+    output_ctx: &AdapterContext,
+    parse_ctx: &AdapterContext,
+    serialize_ctx: &AdapterContext,
+    range: &RegionRange,
+    channel_flags: u32,
+) {
+    unsafe {
+        gvox_sys::gvox_blit_region(
+            input_ctx.ptr,
+            output_ctx.ptr,
+            parse_ctx.ptr,
+            serialize_ctx.ptr,
+            range,
+            channel_flags,
+        );
     }
 }
 
@@ -170,8 +183,27 @@ impl Drop for Context {
     }
 }
 
+
+
 impl Drop for AdapterContext {
     fn drop(&mut self) {
         unsafe { gvox_sys::gvox_destroy_adapter_context(self.ptr) }
     }
+}
+
+pub mod InputAdapterConfigs {
+    pub type ByteBuffer = gvox_sys::GvoxByteBufferInputAdapterConfig;
+}
+pub mod OutputAdapterConfigs {
+    pub type ByteBuffer = gvox_sys::GvoxByteBufferOutputAdapterConfig;
+}
+pub mod ParseAdapters {
+    // There are no standard parsers with configs!
+}
+pub mod SerializeAdapterConfigs {
+    pub type ColoredText = gvox_sys::GvoxColoredTextSerializeAdapterConfig;
+    pub const COLORED_TEXT_DOWNSCALE_MODE_NEAREST: gvox_sys::GvoxColoredTextSerializeAdapterDownscaleMode =
+        gvox_sys::GvoxColoredTextSerializeAdapterDownscaleMode_GVOX_COLORED_TEXT_SERIALIZE_ADAPTER_DOWNSCALE_MODE_NEAREST;
+    pub const COLORED_TEXT_DOWNSCALE_MODE_LINEAR: gvox_sys::GvoxColoredTextSerializeAdapterDownscaleMode =
+        gvox_sys::GvoxColoredTextSerializeAdapterDownscaleMode_GVOX_COLORED_TEXT_SERIALIZE_ADAPTER_DOWNSCALE_MODE_LINEAR;
 }

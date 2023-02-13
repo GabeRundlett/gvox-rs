@@ -1,73 +1,85 @@
-use std::ptr::null_mut;
+use std::ptr::{null, null_mut};
 
-use crate as gvox_rs;
+use crate::{self as gvox_rs};
 mod procedural_parse;
+
+macro_rules! cstr {
+    ($s:expr) => {
+        concat!($s, "\0") as *const str as *const [std::os::raw::c_char]
+            as *const std::os::raw::c_char
+    };
+}
 
 #[test]
 fn gvox_rs_test_procedural() {
     let gvox_ctx = gvox_rs::Context::new();
-    let cstring =
-        std::ffi::CString::new("procedural").expect("Failed to convert Rust string to C string");
-    let str_cstr = cstring.as_ptr();
     let procedural_adapter_info = gvox_rs::ParseAdapterInfo {
-        name_str: str_cstr,
-        begin: Some(procedural_parse::begin),
-        end: Some(procedural_parse::end),
+        base_info: gvox_rs::AdapterBaseInfo {
+            name_str: cstr!("procedural"),
+            create: Some(procedural_parse::create),
+            destroy: Some(procedural_parse::destroy),
+            blit_begin: Some(procedural_parse::blit_begin),
+            blit_end: Some(procedural_parse::blit_end),
+        },
         query_region_flags: Some(procedural_parse::query_region_flags),
         load_region: Some(procedural_parse::load_region),
         unload_region: Some(procedural_parse::unload_region),
         sample_region: Some(procedural_parse::sample_region),
     };
-    unsafe { gvox_sys::gvox_register_parse_adapter(gvox_ctx.ptr, &procedural_adapter_info) };
-    // let i_adapter = gvox_ctx.get_input_adapter("byte_buffer");
-    let o_adapter = gvox_ctx.get_output_adapter("byte_buffer");
-    let p_adapter = gvox_ctx.get_parse_adapter("procedural");
-    let s_adapter = gvox_ctx.get_serialize_adapter("colored_text");
-    // let bytes = include_bytes!("test.gvox");
-    // let mut i_config = gvox_sys::GvoxByteBufferInputAdapterConfig {
-    //     size: bytes.len(),
-    //     data: bytes.as_ptr(),
-    // };
+    gvox_ctx.register_parse_adapter(&procedural_adapter_info);
+    const BYTES: &[u8] = include_bytes!("palette.gvox");
+    let i_config = gvox_rs::InputAdapterConfigs::ByteBuffer {
+        size: BYTES.len(),
+        data: BYTES.as_ptr(),
+    };
     let mut o_buffer_size: usize = 0;
     let mut o_buffer_ptr: *mut u8 = null_mut();
-    let mut o_config = gvox_sys::GvoxByteBufferOutputAdapterConfig {
+    let o_config = gvox_rs::OutputAdapterConfigs::ByteBuffer {
         out_size: (&mut o_buffer_size) as *mut usize,
         out_byte_buffer_ptr: (&mut o_buffer_ptr) as *mut *mut u8,
         allocate: None,
     };
-    let mut s_config = gvox_sys::GvoxColoredTextSerializeAdapterConfig{
+    let s_config = gvox_rs::SerializeAdapterConfigs::ColoredText {
         downscale_factor: 1,
-        downscale_mode: gvox_sys::GvoxColoredTextSerializeAdapterDownscaleMode_GVOX_COLORED_TEXT_SERIALIZE_ADAPTER_DOWNSCALE_MODE_NEAREST,
-        channel_id: gvox_sys::GVOX_CHANNEL_ID_COLOR,
-        non_color_max_value: 0,
+        downscale_mode: gvox_rs::SerializeAdapterConfigs::COLORED_TEXT_DOWNSCALE_MODE_NEAREST,
+        non_color_max_value: 5,
     };
-    let adapter_ctx = gvox_ctx
+    let i_ctx = gvox_ctx
         .create_adapter_context(
-            None,
-            null_mut(),
-            // Some(i_adapter),
-            // &mut i_config as *mut gvox_sys::GvoxByteBufferInputAdapterConfig
-            //     as *mut std::os::raw::c_void,
-            Some(o_adapter),
-            &mut o_config as *mut gvox_sys::GvoxByteBufferOutputAdapterConfig
-                as *mut std::os::raw::c_void,
-            Some(p_adapter),
-            null_mut(),
-            Some(s_adapter),
-            &mut s_config as *mut gvox_sys::GvoxColoredTextSerializeAdapterConfig
-                as *mut std::os::raw::c_void,
+            &Some(gvox_ctx.get_input_adapter("byte_buffer")),
+            Some(i_config),
         )
         .expect("Failed to create adapter context");
-    adapter_ctx.gvox_translate_region(
-        &gvox_rs::RegionRange {
-            offset: gvox_rs::Offset3D {
-                x: -4,
-                y: -4,
-                z: -4,
-            },
-            extent: gvox_rs::Extent3D { x: 8, y: 8, z: 8 },
+    let o_ctx = gvox_ctx
+        .create_adapter_context(
+            &Some(gvox_ctx.get_output_adapter("byte_buffer")),
+            Some(o_config),
+        )
+        .expect("Failed to create adapter context");
+    let p_ctx = gvox_ctx
+        .create_adapter_context::<()>(&Some(gvox_ctx.get_parse_adapter("gvox_palette")), None)
+        .expect("Failed to create adapter context");
+    let s_ctx = gvox_ctx
+        .create_adapter_context(
+            &Some(gvox_ctx.get_serialize_adapter("colored_text")),
+            Some(s_config),
+        )
+        .expect("Failed to create adapter context");
+    let region = gvox_rs::RegionRange {
+        offset: gvox_rs::Offset3D {
+            x: -4,
+            y: -4,
+            z: -4,
         },
-        gvox_sys::GVOX_CHANNEL_BIT_COLOR,
+        extent: gvox_rs::Extent3D { x: 8, y: 8, z: 8 },
+    };
+    gvox_rs::blit_region(
+        &i_ctx,
+        &o_ctx,
+        &p_ctx,
+        &s_ctx,
+        &region,
+        gvox_rs::CHANNEL_BIT_COLOR | gvox_rs::CHANNEL_BIT_NORMAL | gvox_rs::CHANNEL_BIT_MATERIAL_ID,
     );
     match gvox_ctx.get_error() {
         Ok(_) => {}
@@ -77,6 +89,5 @@ fn gvox_rs_test_procedural() {
         let slice = std::slice::from_raw_parts(o_buffer_ptr, o_buffer_size);
         std::str::from_utf8(slice).expect("bad string slice")
     };
-    println!("ptr: {}, size: {}", o_buffer_ptr as usize, o_buffer_size);
     println!("{}", s);
 }
