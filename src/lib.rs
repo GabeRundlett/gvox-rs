@@ -34,10 +34,10 @@ pub const CHANNEL_ID_ROUGHNESS: u32 = gvox_sys::GVOX_CHANNEL_ID_ROUGHNESS;
 pub const CHANNEL_ID_METALNESS: u32 = gvox_sys::GVOX_CHANNEL_ID_METALNESS;
 pub const CHANNEL_ID_TRANSPARENCY: u32 = gvox_sys::GVOX_CHANNEL_ID_TRANSPARENCY;
 pub const CHANNEL_ID_IOR: u32 = gvox_sys::GVOX_CHANNEL_ID_IOR;
-pub const CHANNEL_ID_EMISSIVE_COLOR: u32 = gvox_sys::GVOX_CHANNEL_ID_EMISSIVE_COLOR;
-pub const CHANNEL_ID_EMISSIVE_POWER: u32 = gvox_sys::GVOX_CHANNEL_ID_EMISSIVE_POWER;
+pub const CHANNEL_ID_EMISSIVE_COLOR: u32 = gvox_sys::GVOX_CHANNEL_ID_EMISSIVITY;
 pub const CHANNEL_ID_HARDNESS: u32 = gvox_sys::GVOX_CHANNEL_ID_HARDNESS;
 pub const CHANNEL_ID_LAST_STANDARD: u32 = gvox_sys::GVOX_CHANNEL_ID_LAST_STANDARD;
+pub const CHANNEL_ID_LAST: u32 = gvox_sys::GVOX_CHANNEL_ID_LAST;
 pub const CHANNEL_BIT_COLOR: u32 = gvox_sys::GVOX_CHANNEL_BIT_COLOR;
 pub const CHANNEL_BIT_NORMAL: u32 = gvox_sys::GVOX_CHANNEL_BIT_NORMAL;
 pub const CHANNEL_BIT_MATERIAL_ID: u32 = gvox_sys::GVOX_CHANNEL_BIT_MATERIAL_ID;
@@ -45,10 +45,10 @@ pub const CHANNEL_BIT_ROUGHNESS: u32 = gvox_sys::GVOX_CHANNEL_BIT_ROUGHNESS;
 pub const CHANNEL_BIT_METALNESS: u32 = gvox_sys::GVOX_CHANNEL_BIT_METALNESS;
 pub const CHANNEL_BIT_TRANSPARENCY: u32 = gvox_sys::GVOX_CHANNEL_BIT_TRANSPARENCY;
 pub const CHANNEL_BIT_IOR: u32 = gvox_sys::GVOX_CHANNEL_BIT_IOR;
-pub const CHANNEL_BIT_EMISSIVE_COLOR: u32 = gvox_sys::GVOX_CHANNEL_BIT_EMISSIVE_COLOR;
-pub const CHANNEL_BIT_EMISSIVE_POWER: u32 = gvox_sys::GVOX_CHANNEL_BIT_EMISSIVE_POWER;
+pub const CHANNEL_BIT_EMISSIVE_COLOR: u32 = gvox_sys::GVOX_CHANNEL_BIT_EMISSIVITY;
 pub const CHANNEL_BIT_HARDNESS: u32 = gvox_sys::GVOX_CHANNEL_BIT_HARDNESS;
 pub const CHANNEL_BIT_LAST_STANDARD: u32 = gvox_sys::GVOX_CHANNEL_BIT_LAST_STANDARD;
+pub const CHANNEL_BIT_LAST: u32 = gvox_sys::GVOX_CHANNEL_BIT_LAST;
 
 pub const REGION_FLAG_UNIFORM: u32 = gvox_sys::GVOX_REGION_FLAG_UNIFORM;
 
@@ -183,8 +183,6 @@ impl Drop for Context {
     }
 }
 
-
-
 impl Drop for AdapterContext {
     fn drop(&mut self) {
         unsafe { gvox_sys::gvox_destroy_adapter_context(self.ptr) }
@@ -198,7 +196,7 @@ pub mod OutputAdapterConfigs {
     pub type ByteBuffer = gvox_sys::GvoxByteBufferOutputAdapterConfig;
 }
 pub mod ParseAdapters {
-    // There are no standard parsers with configs!
+    pub type Voxlap = gvox_sys::GvoxVoxlapParseAdapterConfig;
 }
 pub mod SerializeAdapterConfigs {
     pub type ColoredText = gvox_sys::GvoxColoredTextSerializeAdapterConfig;

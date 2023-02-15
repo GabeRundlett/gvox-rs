@@ -10,6 +10,7 @@
 #include "../gvox/include/gvox/adapters/parse/gvox_palette.h"
 #include "../gvox/include/gvox/adapters/parse/gvox_raw.h"
 #include "../gvox/include/gvox/adapters/parse/magicavoxel.h"
+#include "../gvox/include/gvox/adapters/parse/voxlap.h"
 
 #include "../gvox/include/gvox/adapters/serialize/colored_text.h"
 #include "../gvox/include/gvox/adapters/serialize/gvox_palette.h"

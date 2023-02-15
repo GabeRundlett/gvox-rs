@@ -31,7 +31,7 @@ fn sample_terrain_i(xi: i32, yi: i32, zi: i32) -> f32 {
 
 pub unsafe extern "C" fn create(
     _ctx: *mut gvox_sys::GvoxAdapterContext,
-    _config: *mut std::os::raw::c_void,
+    _config: *const std::os::raw::c_void,
 ) {
 }
 pub unsafe extern "C" fn destroy(_ctx: *mut gvox_sys::GvoxAdapterContext) {}
