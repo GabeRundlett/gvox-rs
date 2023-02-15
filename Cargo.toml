@@ -1,6 +1,6 @@
 [package]
 name = "gvox-rs"
-version = "0.1.6"
+version = "0.1.7"
 edition = "2021"
 license = "MIT"
 description = "Voxel file format parser"
@@ -10,4 +10,4 @@ repository = "https://github.com/GabeRundlett/gvox-rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-gvox-sys = { path = "gvox-sys", version = "0.2.0", default-features = false }
+gvox-sys = { path = "gvox-sys", version = "1.0.0", default-features = false }
