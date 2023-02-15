@@ -5,167 +5,203 @@
 #[cfg(test)]
 mod tests;
 
-pub use gvox_sys;
+use gvox_sys;
+
+pub const RESULT_SUCCESS: gvox_sys::GvoxResult = gvox_sys::GvoxResult_GVOX_RESULT_SUCCESS;
+pub const RESULT_ERROR_UNKNOWN: gvox_sys::GvoxResult =
+    gvox_sys::GvoxResult_GVOX_RESULT_ERROR_UNKNOWN;
+pub const RESULT_ERROR_INVALID_PARAMETER: gvox_sys::GvoxResult =
+    gvox_sys::GvoxResult_GVOX_RESULT_ERROR_INVALID_PARAMETER;
+pub const RESULT_ERROR_INPUT_ADAPTER: gvox_sys::GvoxResult =
+    gvox_sys::GvoxResult_GVOX_RESULT_ERROR_INPUT_ADAPTER;
+pub const RESULT_ERROR_OUTPUT_ADAPTER: gvox_sys::GvoxResult =
+    gvox_sys::GvoxResult_GVOX_RESULT_ERROR_OUTPUT_ADAPTER;
+pub const RESULT_ERROR_PARSE_ADAPTER: gvox_sys::GvoxResult =
+    gvox_sys::GvoxResult_GVOX_RESULT_ERROR_PARSE_ADAPTER;
+pub const RESULT_ERROR_SERIALIZE_ADAPTER: gvox_sys::GvoxResult =
+    gvox_sys::GvoxResult_GVOX_RESULT_ERROR_SERIALIZE_ADAPTER;
+pub const RESULT_ERROR_PARSE_ADAPTER_INVALID_INPUT: gvox_sys::GvoxResult =
+    gvox_sys::GvoxResult_GVOX_RESULT_ERROR_PARSE_ADAPTER_INVALID_INPUT;
+pub const RESULT_ERROR_PARSE_ADAPTER_REQUESTED_CHANNEL_NOT_PRESENT: gvox_sys::GvoxResult =
+    gvox_sys::GvoxResult_GVOX_RESULT_ERROR_PARSE_ADAPTER_REQUESTED_CHANNEL_NOT_PRESENT;
+pub const RESULT_ERROR_SERIALIZE_ADAPTER_UNREPRESENTABLE_DATA: gvox_sys::GvoxResult =
+    gvox_sys::GvoxResult_GVOX_RESULT_ERROR_SERIALIZE_ADAPTER_UNREPRESENTABLE_DATA;
+
+pub const CHANNEL_ID_COLOR: u32 = gvox_sys::GVOX_CHANNEL_ID_COLOR;
+pub const CHANNEL_ID_NORMAL: u32 = gvox_sys::GVOX_CHANNEL_ID_NORMAL;
+pub const CHANNEL_ID_MATERIAL_ID: u32 = gvox_sys::GVOX_CHANNEL_ID_MATERIAL_ID;
+pub const CHANNEL_ID_ROUGHNESS: u32 = gvox_sys::GVOX_CHANNEL_ID_ROUGHNESS;
+pub const CHANNEL_ID_METALNESS: u32 = gvox_sys::GVOX_CHANNEL_ID_METALNESS;
+pub const CHANNEL_ID_TRANSPARENCY: u32 = gvox_sys::GVOX_CHANNEL_ID_TRANSPARENCY;
+pub const CHANNEL_ID_IOR: u32 = gvox_sys::GVOX_CHANNEL_ID_IOR;
+pub const CHANNEL_ID_EMISSIVE_COLOR: u32 = gvox_sys::GVOX_CHANNEL_ID_EMISSIVITY;
+pub const CHANNEL_ID_HARDNESS: u32 = gvox_sys::GVOX_CHANNEL_ID_HARDNESS;
+pub const CHANNEL_ID_LAST_STANDARD: u32 = gvox_sys::GVOX_CHANNEL_ID_LAST_STANDARD;
+pub const CHANNEL_ID_LAST: u32 = gvox_sys::GVOX_CHANNEL_ID_LAST;
+pub const CHANNEL_BIT_COLOR: u32 = gvox_sys::GVOX_CHANNEL_BIT_COLOR;
+pub const CHANNEL_BIT_NORMAL: u32 = gvox_sys::GVOX_CHANNEL_BIT_NORMAL;
+pub const CHANNEL_BIT_MATERIAL_ID: u32 = gvox_sys::GVOX_CHANNEL_BIT_MATERIAL_ID;
+pub const CHANNEL_BIT_ROUGHNESS: u32 = gvox_sys::GVOX_CHANNEL_BIT_ROUGHNESS;
+pub const CHANNEL_BIT_METALNESS: u32 = gvox_sys::GVOX_CHANNEL_BIT_METALNESS;
+pub const CHANNEL_BIT_TRANSPARENCY: u32 = gvox_sys::GVOX_CHANNEL_BIT_TRANSPARENCY;
+pub const CHANNEL_BIT_IOR: u32 = gvox_sys::GVOX_CHANNEL_BIT_IOR;
+pub const CHANNEL_BIT_EMISSIVE_COLOR: u32 = gvox_sys::GVOX_CHANNEL_BIT_EMISSIVITY;
+pub const CHANNEL_BIT_HARDNESS: u32 = gvox_sys::GVOX_CHANNEL_BIT_HARDNESS;
+pub const CHANNEL_BIT_LAST_STANDARD: u32 = gvox_sys::GVOX_CHANNEL_BIT_LAST_STANDARD;
+pub const CHANNEL_BIT_LAST: u32 = gvox_sys::GVOX_CHANNEL_BIT_LAST;
+
+pub const REGION_FLAG_UNIFORM: u32 = gvox_sys::GVOX_REGION_FLAG_UNIFORM;
 
 pub struct Context {
-    ctx: *mut gvox_sys::GVoxContext,
+    ptr: *mut gvox_sys::GvoxContext,
+}
+pub type Adapter = *mut gvox_sys::GvoxAdapter;
+
+pub struct AdapterContext {
+    ptr: *mut gvox_sys::GvoxAdapterContext,
 }
 
-pub type Scene = gvox_sys::GVoxScene;
+pub type Offset3D = gvox_sys::GvoxOffset3D;
+pub type Extent3D = gvox_sys::GvoxExtent3D;
+pub type RegionRange = gvox_sys::GvoxRegionRange;
+pub type Region = gvox_sys::GvoxRegion;
 
-pub type Payload = gvox_sys::GVoxPayload;
-
-// fn path_to_buf(path: &std::path::Path) -> Vec<u8> {
-//     let mut buf = Vec::new();
-//     buf.extend(path.to_string_lossy().as_bytes());
-//     buf.push(0);
-//     buf
-// }
+pub type AdapterBaseInfo = gvox_sys::GvoxAdapterBaseInfo;
+pub type InputAdapterInfo = gvox_sys::GvoxInputAdapterInfo;
+pub type OutputAdapterInfo = gvox_sys::GvoxOutputAdapterInfo;
+pub type ParseAdapterInfo = gvox_sys::GvoxParseAdapterInfo;
+pub type SerializeAdapterInfo = gvox_sys::GvoxSerializeAdapterInfo;
 
 impl Context {
     pub fn new() -> Self {
         let ctx = unsafe { gvox_sys::gvox_create_context() };
-        Context { ctx }
+        Context { ptr: ctx }
     }
-
-    // pub fn push_root_path(&self, path: &std::path::Path) {
-    //     let path_buf = path_to_buf(path);
-    //     let path_cstr = path_buf.as_ptr() as *const std::os::raw::c_char;
-    //     unsafe { gvox_sys::gvox_push_root_path(self.ctx, path_cstr) }
-    // }
-
-    // pub fn pop_root_path(&self) {
-    //     unsafe { gvox_sys::gvox_pop_root_path(self.ctx) }
-    // }
-
-    fn get_error(&self) -> String {
+    pub fn get_error(&self) -> ::std::result::Result<(), String> {
         unsafe {
-            let mut msg_size: usize = 0;
-            gvox_sys::gvox_get_result_message(self.ctx, 0 as *mut i8, &mut msg_size);
-            let mut buf: Vec<u8> = Vec::new();
-            buf.resize(msg_size, 0);
-            gvox_sys::gvox_get_result_message(self.ctx, buf.as_mut_ptr() as *mut i8, &mut msg_size);
-            gvox_sys::gvox_pop_result(self.ctx);
-            use std::str;
-            match str::from_utf8(buf.as_slice()) {
-                Ok(v) => v.to_string(),
-                Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
+            if gvox_sys::gvox_get_result(self.ptr) != gvox_sys::GvoxResult_GVOX_RESULT_SUCCESS {
+                let mut msg_size: usize = 0;
+                gvox_sys::gvox_get_result_message(self.ptr, 0 as *mut i8, &mut msg_size);
+                let mut buf: Vec<u8> = Vec::new();
+                buf.resize(msg_size, 0);
+                gvox_sys::gvox_get_result_message(
+                    self.ptr,
+                    buf.as_mut_ptr() as *mut i8,
+                    &mut msg_size,
+                );
+                gvox_sys::gvox_pop_result(self.ptr);
+                use std::str;
+                match str::from_utf8(buf.as_slice()) {
+                    Ok(v) => Err(v.to_string()),
+                    Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
+                }
+            } else {
+                Ok(())
             }
         }
     }
-
-    // pub fn load(&self, path: &std::path::Path) -> Result<Scene, String> {
-    //     let path_buf = path_to_buf(path);
-    //     let path_cstr = path_buf.as_ptr() as *const std::os::raw::c_char;
-    //     let result = unsafe { gvox_sys::gvox_load(self.ctx, path_cstr) };
-    //     if unsafe { gvox_sys::gvox_get_result(self.ctx) != gvox_sys::GVoxResult_GVOX_SUCCESS } {
-    //         Err(self.get_error())
-    //     } else {
-    //         Ok(result)
-    //     }
-    // }
-
-    // pub fn load_from_raw(&self, path: &std::path::Path, src_format: &str) -> Result<Scene, String> {
-    //     let path_buf = path_to_buf(path);
-    //     let path_cstr = path_buf.as_ptr() as *const std::os::raw::c_char;
-    //     let cstring =
-    //         std::ffi::CString::new(src_format).expect("Failed to convert Rust string to C string");
-    //     let str_cstr = cstring.as_ptr();
-    //     let result = unsafe { gvox_sys::gvox_load_from_raw(self.ctx, path_cstr, str_cstr) };
-    //     if unsafe { gvox_sys::gvox_get_result(self.ctx) != gvox_sys::GVoxResult_GVOX_SUCCESS } {
-    //         Err(self.get_error())
-    //     } else {
-    //         Ok(result)
-    //     }
-    // }
-
-    // pub fn save(
-    //     &self,
-    //     scene: &Scene,
-    //     path: &std::path::Path,
-    //     dst_format: &str,
-    // ) -> Result<(), String> {
-    //     let path_buf = path_to_buf(path);
-    //     let path_cstr = path_buf.as_ptr() as *const std::os::raw::c_char;
-    //     let cstring =
-    //         std::ffi::CString::new(dst_format).expect("Failed to convert Rust string to C string");
-    //     let str_cstr = cstring.as_ptr();
-    //     unsafe { gvox_sys::gvox_save(self.ctx, *scene, path_cstr, str_cstr) }
-    //     if unsafe { gvox_sys::gvox_get_result(self.ctx) != gvox_sys::GVoxResult_GVOX_SUCCESS } {
-    //         Err(self.get_error())
-    //     } else {
-    //         Ok({})
-    //     }
-    // }
-
-    // pub fn save_as_raw(
-    //     &self,
-    //     scene: &Scene,
-    //     path: &std::path::Path,
-    //     dst_format: &str,
-    // ) -> Result<(), String> {
-    //     let path_buf = path_to_buf(path);
-    //     let path_cstr = path_buf.as_ptr() as *const std::os::raw::c_char;
-    //     let cstring =
-    //         std::ffi::CString::new(dst_format).expect("Failed to convert Rust string to C string");
-    //     let str_cstr = cstring.as_ptr();
-    //     unsafe { gvox_sys::gvox_save_as_raw(self.ctx, *scene, path_cstr, str_cstr) }
-    //     if unsafe { gvox_sys::gvox_get_result(self.ctx) != gvox_sys::GVoxResult_GVOX_SUCCESS } {
-    //         Err(self.get_error())
-    //     } else {
-    //         Ok({})
-    //     }
-    // }
-
-    pub fn parse(&self, payload: &Payload, src_format: &str) -> Result<Scene, String> {
-        let cstring =
-            std::ffi::CString::new(src_format).expect("Failed to convert Rust string to C string");
-        let str_cstr = cstring.as_ptr();
-        let result = unsafe { gvox_sys::gvox_parse(self.ctx, payload, str_cstr) };
-
-        if unsafe { gvox_sys::gvox_get_result(self.ctx) != gvox_sys::GVoxResult_GVOX_SUCCESS } {
-            Err(self.get_error())
-        } else {
-            Ok(result)
-        }
+    pub fn register_input_adapter(&self, adapter_info: &InputAdapterInfo) -> Adapter {
+        unsafe { gvox_sys::gvox_register_input_adapter(self.ptr, adapter_info) }
     }
-    pub fn serialize(&self, scene: &Scene, dst_format: &str) -> Result<Payload, String> {
-        let cstring =
-            std::ffi::CString::new(dst_format).expect("Failed to convert Rust string to C string");
+    pub fn get_input_adapter(&self, adapter_name: &str) -> Adapter {
+        let cstring = std::ffi::CString::new(adapter_name)
+            .expect("Failed to convert Rust string to C string");
         let str_cstr = cstring.as_ptr();
-        let result = unsafe { gvox_sys::gvox_serialize(self.ctx, scene, str_cstr) };
-
-        if unsafe { gvox_sys::gvox_get_result(self.ctx) != gvox_sys::GVoxResult_GVOX_SUCCESS } {
-            Err(self.get_error())
-        } else {
-            Ok(result)
-        }
+        unsafe { gvox_sys::gvox_get_input_adapter(self.ptr, str_cstr) }
     }
-
-    pub fn destroy_payload(&self, payload: &Payload, format: &str) {
-        let cstring =
-            std::ffi::CString::new(format).expect("Failed to convert Rust string to C string");
+    pub fn register_output_adapter(&self, adapter_info: &OutputAdapterInfo) -> Adapter {
+        unsafe { gvox_sys::gvox_register_output_adapter(self.ptr, adapter_info) }
+    }
+    pub fn get_output_adapter(&self, adapter_name: &str) -> Adapter {
+        let cstring = std::ffi::CString::new(adapter_name)
+            .expect("Failed to convert Rust string to C string");
         let str_cstr = cstring.as_ptr();
-        unsafe {
-            gvox_sys::gvox_destroy_payload(self.ctx, payload, str_cstr);
-        }
+        unsafe { gvox_sys::gvox_get_output_adapter(self.ptr, str_cstr) }
     }
+    pub fn register_parse_adapter(&self, adapter_info: &ParseAdapterInfo) -> Adapter {
+        unsafe { gvox_sys::gvox_register_parse_adapter(self.ptr, adapter_info) }
+    }
+    pub fn get_parse_adapter(&self, adapter_name: &str) -> Adapter {
+        let cstring = std::ffi::CString::new(adapter_name)
+            .expect("Failed to convert Rust string to C string");
+        let str_cstr = cstring.as_ptr();
+        unsafe { gvox_sys::gvox_get_parse_adapter(self.ptr, str_cstr) }
+    }
+    pub fn register_serialize_adapter(&self, adapter_info: &SerializeAdapterInfo) -> Adapter {
+        unsafe { gvox_sys::gvox_register_serialize_adapter(self.ptr, adapter_info) }
+    }
+    pub fn get_serialize_adapter(&self, adapter_name: &str) -> Adapter {
+        let cstring = std::ffi::CString::new(adapter_name)
+            .expect("Failed to convert Rust string to C string");
+        let str_cstr = cstring.as_ptr();
+        unsafe { gvox_sys::gvox_get_serialize_adapter(self.ptr, str_cstr) }
+    }
+    pub fn create_adapter_context<ConfigT>(
+        &self,
+        adapter: &Option<Adapter>,
+        config: Option<ConfigT>,
+    ) -> std::result::Result<AdapterContext, String> {
+        use std::ptr::null_mut;
+        let result = unsafe {
+            gvox_sys::gvox_create_adapter_context(
+                self.ptr,
+                adapter.unwrap_or(null_mut() as Adapter),
+                match config {
+                    Some(mut c) => (&mut c) as *mut ConfigT as *mut std::os::raw::c_void,
+                    None => null_mut(),
+                },
+            )
+        };
+        self.get_error()?;
+        Ok(AdapterContext { ptr: result })
+    }
+}
 
-    pub fn destroy_scene(&self, scene: &Scene) {
-        unsafe {
-            gvox_sys::gvox_destroy_scene(scene);
-        }
+pub fn blit_region(
+    input_ctx: &AdapterContext,
+    output_ctx: &AdapterContext,
+    parse_ctx: &AdapterContext,
+    serialize_ctx: &AdapterContext,
+    range: &RegionRange,
+    channel_flags: u32,
+) {
+    unsafe {
+        gvox_sys::gvox_blit_region(
+            input_ctx.ptr,
+            output_ctx.ptr,
+            parse_ctx.ptr,
+            serialize_ctx.ptr,
+            range,
+            channel_flags,
+        );
     }
 }
 
 impl Drop for Context {
     fn drop(&mut self) {
-        unsafe { gvox_sys::gvox_destroy_context(self.ctx) }
+        unsafe { gvox_sys::gvox_destroy_context(self.ptr) }
     }
 }
 
-#[no_mangle]
-pub extern "C" fn add(left: i32, right: i32) -> i32 {
-    Context::new();
-    left + right
+impl Drop for AdapterContext {
+    fn drop(&mut self) {
+        unsafe { gvox_sys::gvox_destroy_adapter_context(self.ptr) }
+    }
+}
+
+pub mod InputAdapterConfigs {
+    pub type ByteBuffer = gvox_sys::GvoxByteBufferInputAdapterConfig;
+}
+pub mod OutputAdapterConfigs {
+    pub type ByteBuffer = gvox_sys::GvoxByteBufferOutputAdapterConfig;
+}
+pub mod ParseAdapters {
+    pub type Voxlap = gvox_sys::GvoxVoxlapParseAdapterConfig;
+}
+pub mod SerializeAdapterConfigs {
+    pub type ColoredText = gvox_sys::GvoxColoredTextSerializeAdapterConfig;
+    pub const COLORED_TEXT_DOWNSCALE_MODE_NEAREST: gvox_sys::GvoxColoredTextSerializeAdapterDownscaleMode =
+        gvox_sys::GvoxColoredTextSerializeAdapterDownscaleMode_GVOX_COLORED_TEXT_SERIALIZE_ADAPTER_DOWNSCALE_MODE_NEAREST;
+    pub const COLORED_TEXT_DOWNSCALE_MODE_LINEAR: gvox_sys::GvoxColoredTextSerializeAdapterDownscaleMode =
+        gvox_sys::GvoxColoredTextSerializeAdapterDownscaleMode_GVOX_COLORED_TEXT_SERIALIZE_ADAPTER_DOWNSCALE_MODE_LINEAR;
 }
