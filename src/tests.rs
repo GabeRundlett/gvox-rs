@@ -1,7 +1,9 @@
+#![allow(warnings)]
+
 use std::ptr::{null, null_mut};
 
 use crate::{self as gvox_rs};
-//mod procedural_parse;
+mod procedural_parse;
 
 macro_rules! cstr {
     ($s:expr) => {
@@ -9,7 +11,7 @@ macro_rules! cstr {
             as *const std::os::raw::c_char
     };
 }
-        
+
 const BYTES: &[u8] = include_bytes!("palette.gvox");
 
 #[test]
@@ -18,6 +20,7 @@ pub fn gvox_rs_test_procedural() {
 
     {
         let gvox_ctx = gvox_rs::Context::new();
+        gvox_ctx.register_adapter::<gvox_rs::Parse, procedural_parse::Procedural>();
 
         let o_config = gvox_rs::adapters::ByteBufferOutputAdapterConfig::from(&mut o_buffer);
     
@@ -35,7 +38,7 @@ pub fn gvox_rs_test_procedural() {
             .expect("Failed to get byte buffer input adapter.").create_adapter_context(o_config)
             .expect("Failed to create adapter context.");
         
-        let mut p_ctx = gvox_ctx.get_adapter::<gvox_rs::Parse, gvox_rs::adapters::GvoxPalette>()
+        let mut p_ctx = gvox_ctx.get_adapter::<gvox_rs::Parse, procedural_parse::Procedural>()
             .expect("Failed to get byte buffer input adapter.").create_adapter_context(())
             .expect("Failed to create adapter context.");
     

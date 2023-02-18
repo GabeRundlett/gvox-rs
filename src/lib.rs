@@ -838,7 +838,7 @@ pub trait ParseAdapterHandler<D: AdapterDescriptor<Parse, Handler = Self>>: Base
     /// Loads the channel data for the given region of voxels.
     fn load_region(&mut self, blit_ctx: &ParseBlitContext, range: &RegionRange, channel_flags: ChannelFlags) -> Result<Region<Self::RegionData>, GvoxError>;
     /// Unloads the previously-created region of voxels.
-    fn unload_region(&mut self, blit_ctx: &ParseBlitContext, region: Region<Self::RegionData>) -> Result<(), GvoxError>;
+    fn unload_region(&mut self, blit_ctx: &ParseBlitContext, channel_flags: Region<Self::RegionData>) -> Result<(), GvoxError>;
     /// Determines the value of a voxel at the provided sample position.
     fn sample_region(&mut self, blit_ctx: &ParseBlitContext, region: &Region<Self::RegionData>, offset: &Offset3D, channel_id: ChannelId) -> Result<u32, GvoxError>;
 }
@@ -1204,6 +1204,14 @@ impl From<ChannelFlags> for u32 {
 impl From<u32> for ChannelFlags {
     fn from(value: u32) -> Self {
         Self(value)
+    }
+}
+
+impl Not for ChannelFlags {
+    type Output = Self;
+
+    fn not(self) -> Self::Output {
+        Self(!self.0)
     }
 }
 
