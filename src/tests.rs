@@ -130,7 +130,7 @@ impl gvox_rs::NamedAdapter for PalleteGvoxInputAdapter {
 }
 
 impl gvox_rs::BaseAdapterHandler<gvox_rs::Input, Self> for PalleteGvoxInputAdapter {
-    fn create(config: &<Self as gvox_rs::AdapterDescriptor<gvox_rs::Input>>::Configuration<'_>) -> Result<Self, gvox_rs::GvoxError> {
+    fn create(config: &()) -> Result<Self, gvox_rs::GvoxError> {
         Ok(Self)
     }
 
@@ -157,7 +157,7 @@ pub fn gvox_rs_test_rust_adapter() {
 
     {
         let gvox_ctx = gvox_rs::Context::new();
-        gvox_ctx.register_input_adapter::<PalleteGvoxInputAdapter>();
+        gvox_ctx.register_adapter::<gvox_rs::Input, PalleteGvoxInputAdapter>();
 
         let o_config = gvox_rs::adapters::ByteBufferOutputAdapterConfig::from(&mut o_buffer);
     
@@ -168,7 +168,7 @@ pub fn gvox_rs_test_rust_adapter() {
         };
     
         let mut i_ctx = gvox_ctx.get_adapter::<gvox_rs::Input, PalleteGvoxInputAdapter>()
-            .expect("Failed to get byte buffer input adapter.").create_adapter_context(&())
+            .expect("Failed to get custom input adapter.").create_adapter_context(&())
             .expect("Failed to create adapter context.");
     
         let mut o_ctx = gvox_ctx.get_adapter::<gvox_rs::Output, gvox_rs::adapters::ByteBuffer>()

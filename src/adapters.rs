@@ -98,7 +98,7 @@ impl FileInputAdapterConfig {
     /// Create a new file input for the given file name and byte offset.
     pub fn new(file_name: impl Into<String>, byte_offset: usize) -> Self {
         let name = Into::<String>::into(file_name);
-        let file_name = CString::new(name).expect("Could not convert file name to C string.");;
+        let file_name = CString::new(name).expect("Could not convert file name to C string.");
         let config = gvox_sys::GvoxFileInputAdapterConfig {
             filepath: file_name.as_ptr(),
             byte_offset
