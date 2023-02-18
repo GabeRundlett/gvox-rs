@@ -8,6 +8,7 @@ use bitflags::*;
 use fxhash::*;
 use int_enum::*;
 use std::any::*;
+use std::collections::hash_map::*;
 use std::error::*;
 use std::ffi::*;
 use std::marker::*;
@@ -163,13 +164,9 @@ impl ContextInner {
     /// for the selected adapter kind, and the configuration structure that the adapter accepts
     /// must match that of the underlying context.
     pub unsafe fn add_external_adapter<K: AdapterKind, A: AdapterDescriptor<K> + NamedAdapter>(&mut self) -> Result<(), GvoxError> {
-        let id = AdapterIdentifier::new::<K, A>();
-        if self.registered_adapter_types.contains_key(&id) {
-            Err(GvoxError::new(ErrorType::InvalidParameter, "Attempted to register duplicate adapter.".to_string()))
-        }
-        else {
-            self.registered_adapter_types.insert(id, TypeId::of::<A>());
-            Ok(())
+        match self.registered_adapter_types.entry(AdapterIdentifier::new::<K, A>()) {
+            Entry::Vacant(v) => { v.insert(TypeId::of::<A>()); Ok(()) },
+            Entry::Occupied(_) => Err(GvoxError::new(ErrorType::InvalidParameter, "Attempted to register duplicate adapter.".to_string()))
         }
     }
 
@@ -206,7 +203,7 @@ impl ContextInner {
         let mut buf = Vec::new();
         while code != gvox_sys::GvoxResult_GVOX_RESULT_SUCCESS {
             let mut msg_size = 0;
-            gvox_sys::gvox_get_result_message(ptr, 0 as *mut i8, &mut msg_size);
+            gvox_sys::gvox_get_result_message(ptr, std::ptr::null_mut(), &mut msg_size);
             buf.resize(msg_size, 0);
             gvox_sys::gvox_get_result_message(
                 ptr,
@@ -502,6 +499,8 @@ impl AdapterContextHolder {
     /// 
     /// The provided adapter context pointer must be initializable as a valid input context holder.
     unsafe extern "C" fn blit_begin<K: private::AdapterKindAssociation, D: AdapterDescriptor<K>>(blit_ctx: *mut gvox_sys::GvoxBlitContext, ctx: *mut gvox_sys::GvoxAdapterContext) where D::Handler: BaseAdapterHandler<K, D> {
+        use private::*;
+        
         let mut ctx = Self::from_raw(ctx);
         let blit_ctx = K::BlitContext::new(ctx.context_mut_ptr(), blit_ctx);
 
@@ -514,6 +513,8 @@ impl AdapterContextHolder {
     /// 
     /// The provided adapter context pointer must be initializable as a valid input context holder.
     unsafe extern "C" fn blit_end<K: private::AdapterKindAssociation, D: AdapterDescriptor<K>>(blit_ctx: *mut gvox_sys::GvoxBlitContext, ctx: *mut gvox_sys::GvoxAdapterContext) where D::Handler: BaseAdapterHandler<K, D> {
+        use private::*;
+
         let mut ctx = Self::from_raw(ctx);
         let blit_ctx = K::BlitContext::new(ctx.context_mut_ptr(), blit_ctx);
 
@@ -594,30 +595,8 @@ impl OutputContextHolder {
 /// Provides the ability for an input adapter to interact with other adapters during blit operations.
 pub struct InputBlitContext();
 
-impl BlitContextType for InputBlitContext {
-    unsafe fn new(_: *mut gvox_sys::GvoxContext, _: *mut gvox_sys::GvoxBlitContext) -> Self {
-        Self()
-    }
-}
-
 /// Provides the ability for an output adapter to interact with other adapters during blit operations.
 pub struct OutputBlitContext();
-
-impl BlitContextType for OutputBlitContext {
-    unsafe fn new(_: *mut gvox_sys::GvoxContext, _: *mut gvox_sys::GvoxBlitContext) -> Self {
-        Self()
-    }
-}
-
-trait BlitContextType: 'static + Sized {
-    /// Creates a new blit context for the given context and blit pointers.
-    /// 
-    /// # Safety
-    /// 
-    /// For this function call to be sound, both parameters must point to valid contexts
-    /// and this object must not outlive either of them.
-    unsafe fn new(ctx: *mut gvox_sys::GvoxContext, blit_ctx: *mut gvox_sys::GvoxBlitContext) -> Self;
-}
 
 /// Represents the user data type that handles adapter context operations.
 pub trait BaseAdapterHandler<K: AdapterKind + private::AdapterKindAssociation, D: AdapterDescriptor<K, Handler = Self>>: 'static + Sized {
@@ -627,9 +606,9 @@ pub trait BaseAdapterHandler<K: AdapterKind + private::AdapterKindAssociation, D
     fn destroy(self) -> Result<(), GvoxError>;
     
     /// Called whenever a blit operation begins for the current context.
-    fn blit_begin(&mut self, blit_ctx: &K::BlitContext) -> Result<(), GvoxError> { Ok(()) }
+    fn blit_begin(&mut self, _: &K::BlitContext) -> Result<(), GvoxError> { Ok(()) }
     /// Called whenever a blit operation ends for the current context.
-    fn blit_end(&mut self, blit_ctx: &K::BlitContext) -> Result<(), GvoxError> { Ok(()) }
+    fn blit_end(&mut self, _: &K::BlitContext) -> Result<(), GvoxError> { Ok(()) }
 }
 
 /// Represents the user data type that handles input adapter context operations.
@@ -778,7 +757,7 @@ impl ChannelId {
 
     /// Retrieves an iterator over all voxel channel IDs.
     pub fn iter() -> impl Iterator<Item = ChannelId> {
-        (0..=gvox_sys::GVOX_CHANNEL_ID_LAST).map(|x| ChannelId(x))
+        (0..=gvox_sys::GVOX_CHANNEL_ID_LAST).map(ChannelId)
     }
 }
 
@@ -864,10 +843,15 @@ impl ChannelFlags {
     pub const fn empty() -> Self {
         Self(0)
     }
+}
 
-    /// Creates an iterator over the set of channels contained in these flags.
-    pub fn into_iter(self) -> impl Iterator<Item = ChannelId> {
-        ChannelId::iter().filter(move |&x| self.contains(x))
+impl IntoIterator for ChannelFlags {
+    type Item = ChannelId;
+
+    type IntoIter = Box<dyn Iterator<Item = Self::Item>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        Box::new(ChannelId::iter().filter(move |&x| self.contains(x)))
     }
 }
 
@@ -987,6 +971,28 @@ mod private {
     impl Sealed for Output {}
     impl Sealed for Parse {}
     impl Sealed for Serialize {}
+
+    /// Provides an interface through which adapters can query other adapters for information.
+    pub trait BlitContextType: 'static + Sized {
+        /// Creates a new blit context for the given context and blit pointers.
+        /// 
+        /// # Safety
+        /// 
+        /// For this function call to be sound, both parameters must point to valid contexts
+        /// and this object must not outlive either of them.
+        unsafe fn new(ctx: *mut gvox_sys::GvoxContext, blit_ctx: *mut gvox_sys::GvoxBlitContext) -> Self;
+    }
+    
+    impl BlitContextType for InputBlitContext {
+        unsafe fn new(_: *mut gvox_sys::GvoxContext, _: *mut gvox_sys::GvoxBlitContext) -> Self {
+            Self()
+        }
+    }
+    impl BlitContextType for OutputBlitContext {
+        unsafe fn new(_: *mut gvox_sys::GvoxContext, _: *mut gvox_sys::GvoxBlitContext) -> Self {
+            Self()
+        }
+    }
 
     /// Describes the types associated with a given operation kind.
     pub trait AdapterKindAssociation: AdapterKind {
