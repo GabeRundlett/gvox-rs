@@ -31,7 +31,7 @@ pub struct ByteBufferOutputAdapterConfig<'a> {
     output: &'a mut Option<Box<[u8]>>,
     /// The original byte buffer that lived at the referenced output. The output will replace
     /// this buffer only if the adapter writes to the output.
-    old: Box<[u8]>
+    old: Box<[u8]>,
 }
 
 impl<'a> ByteBufferOutputAdapterConfig<'a> {
@@ -54,10 +54,14 @@ impl<'a> From<&'a mut Box<[u8]>> for ByteBufferOutputAdapterConfig<'a> {
             let config = gvox_sys::GvoxByteBufferOutputAdapterConfig {
                 out_size: out_byte_buffer_ptr.add(1) as *mut usize,
                 out_byte_buffer_ptr,
-                allocate: Some(Self::allocate)
+                allocate: Some(Self::allocate),
             };
 
-            Self { config, output, old }
+            Self {
+                config,
+                output,
+                old,
+            }
         }
     }
 }
@@ -98,7 +102,7 @@ pub struct FileInputAdapterConfig {
     /// in order for the native adapter to use it.
     config: gvox_sys::GvoxFileInputAdapterConfig,
     /// The name of this file. This must outlive `config`, which references the underlying buffer.
-    file_name: CString
+    file_name: CString,
 }
 
 impl FileInputAdapterConfig {
@@ -108,7 +112,7 @@ impl FileInputAdapterConfig {
         let file_name = CString::new(name).expect("Could not convert file name to C string.");
         let config = gvox_sys::GvoxFileInputAdapterConfig {
             filepath: file_name.as_ptr(),
-            byte_offset
+            byte_offset,
         };
 
         Self { file_name, config }
@@ -123,7 +127,7 @@ pub struct FileOutputAdapterConfig {
     /// in order for the native adapter to use it.
     config: gvox_sys::GvoxFileOutputAdapterConfig,
     /// The name of this file. This must outlive `config`, which references the underlying buffer.
-    file_name: CString
+    file_name: CString,
 }
 
 impl FileOutputAdapterConfig {
@@ -132,7 +136,7 @@ impl FileOutputAdapterConfig {
         let name = Into::<String>::into(file_name);
         let file_name = CString::new(name).expect("Could not convert file name to C string.");
         let config = gvox_sys::GvoxFileOutputAdapterConfig {
-            filepath: file_name.as_ptr()
+            filepath: file_name.as_ptr(),
         };
 
         Self { file_name, config }
@@ -160,7 +164,7 @@ pub enum ColoredTextSerializeAdapterDownscaleMode {
     /// The nearest voxel's value should be taken during filtering.
     Nearest = 0,
     /// Linear blending should be utilized to filter the voxels.
-    Linear = 1
+    Linear = 1,
 }
 
 /// Provides settings for controlling how voxels are visualized as colored text.
@@ -177,7 +181,11 @@ pub struct ColoredTextSerializeAdapterConfig {
 
 impl Default for ColoredTextSerializeAdapterConfig {
     fn default() -> Self {
-        Self { downscale_factor: 1, downscale_mode: ColoredTextSerializeAdapterDownscaleMode::Nearest, non_color_max_value: 0 }
+        Self {
+            downscale_factor: 1,
+            downscale_mode: ColoredTextSerializeAdapterDownscaleMode::Nearest,
+            non_color_max_value: 0,
+        }
     }
 }
 
@@ -269,11 +277,19 @@ pub struct VoxlapParseAdapterConfig {
     /// Whether to fill in the inside of objects, or leave them hollow.
     make_solid: bool,
     /// Whether this an Ace of Spades file. Ace of Spades files do not have a header.
-    is_ace_of_spades: bool
+    is_ace_of_spades: bool,
 }
 
 impl Default for VoxlapParseAdapterConfig {
     fn default() -> Self {
-        Self { size: Extent3D { x: 1024, y: 1024, z: 256 }, make_solid: true, is_ace_of_spades: Default::default() }
+        Self {
+            size: Extent3D {
+                x: 1024,
+                y: 1024,
+                z: 256,
+            },
+            make_solid: true,
+            is_ace_of_spades: Default::default(),
+        }
     }
 }

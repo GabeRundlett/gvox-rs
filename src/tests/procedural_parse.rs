@@ -55,12 +55,24 @@ impl gvox_rs::BaseAdapterHandler<gvox_rs::Parse, Self> for Procedural {
 impl gvox_rs::ParseAdapterHandler<Self> for Procedural {
     type RegionData = ();
 
-    fn query_region_flags(&mut self, blit_ctx: &gvox_rs::ParseBlitContext, range: &gvox_rs::RegionRange, channel_flags: gvox_rs::ChannelFlags) -> Result<gvox_rs::RegionFlags, gvox_rs::GvoxError> {
+    fn query_region_flags(
+        &mut self,
+        blit_ctx: &gvox_rs::ParseBlitContext,
+        range: &gvox_rs::RegionRange,
+        channel_flags: gvox_rs::ChannelFlags,
+    ) -> Result<gvox_rs::RegionFlags, gvox_rs::GvoxError> {
         Ok(gvox_rs::RegionFlags::empty())
     }
 
-    fn load_region(&mut self, blit_ctx: &gvox_rs::ParseBlitContext, range: &gvox_rs::RegionRange, channel_flags: gvox_rs::ChannelFlags) -> Result<gvox_rs::Region<Self::RegionData>, gvox_rs::GvoxError> {
-        let available_channels = gvox_rs::ChannelId::COLOR | gvox_rs::ChannelId::NORMAL | gvox_rs::ChannelId::MATERIAL_ID;
+    fn load_region(
+        &mut self,
+        blit_ctx: &gvox_rs::ParseBlitContext,
+        range: &gvox_rs::RegionRange,
+        channel_flags: gvox_rs::ChannelFlags,
+    ) -> Result<gvox_rs::Region<Self::RegionData>, gvox_rs::GvoxError> {
+        let available_channels = gvox_rs::ChannelId::COLOR
+            | gvox_rs::ChannelId::NORMAL
+            | gvox_rs::ChannelId::MATERIAL_ID;
         if (channel_flags & !available_channels) != gvox_rs::ChannelFlags::empty() {
             // gvox_sys::gvox_adapter_push_error(
             //     ctx,
@@ -68,14 +80,29 @@ impl gvox_rs::ParseAdapterHandler<Self> for Procedural {
             //     cstr!("procedural 'parser' does not generate anything other than color & normal"),
             // );
         }
-        Ok(gvox_rs::Region::new(*range, channel_flags & available_channels, gvox_rs::RegionFlags::empty(), ()))
+        Ok(gvox_rs::Region::new(
+            *range,
+            channel_flags & available_channels,
+            gvox_rs::RegionFlags::empty(),
+            (),
+        ))
     }
 
-    fn unload_region(&mut self, blit_ctx: &gvox_rs::ParseBlitContext, region: gvox_rs::Region<Self::RegionData>) -> Result<(), gvox_rs::GvoxError> {
+    fn unload_region(
+        &mut self,
+        blit_ctx: &gvox_rs::ParseBlitContext,
+        region: gvox_rs::Region<Self::RegionData>,
+    ) -> Result<(), gvox_rs::GvoxError> {
         Ok(())
     }
 
-    fn sample_region(&mut self, blit_ctx: &gvox_rs::ParseBlitContext, region: &gvox_rs::Region<Self::RegionData>, offset: &gvox_rs::Offset3D, channel_id: gvox_rs::ChannelId) -> Result<u32, gvox_rs::GvoxError> {
+    fn sample_region(
+        &mut self,
+        blit_ctx: &gvox_rs::ParseBlitContext,
+        region: &gvox_rs::Region<Self::RegionData>,
+        offset: &gvox_rs::Offset3D,
+        channel_id: gvox_rs::ChannelId,
+    ) -> Result<u32, gvox_rs::GvoxError> {
         let val = sample_terrain_i((*offset).x, (*offset).y, (*offset).z);
         let mut color = create_color(0.6, 0.7, 0.9, 0);
         let mut normal = create_normal(0.0, 0.0, 0.0);
@@ -126,7 +153,7 @@ impl gvox_rs::ParseAdapterHandler<Self> for Procedural {
                 id = 3;
             }
         }
-        
+
         Ok(if channel_id == gvox_rs::ChannelId::COLOR {
             color
         } else if channel_id == gvox_rs::ChannelId::NORMAL {
