@@ -5,7 +5,7 @@
 
 #include "../gvox/include/gvox/adapters/output/byte_buffer.h"
 // #include "../gvox/include/gvox/adapters/output/file.h"
-// #include "../gvox/include/gvox/adapters/output/stdout.h"
+#include "../gvox/include/gvox/adapters/output/stdout.h"
 
 #include "../gvox/include/gvox/adapters/parse/gvox_palette.h"
 #include "../gvox/include/gvox/adapters/parse/gvox_raw.h"

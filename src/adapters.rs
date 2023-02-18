@@ -28,7 +28,7 @@ pub struct ByteBufferOutputAdapterConfig<'a> {
 
 impl<'a> ByteBufferOutputAdapterConfig<'a> {
     extern "C" fn allocate(len: usize) -> *mut c_void {
-        vec![0; len].into_boxed_slice().as_mut_ptr() as *mut c_void
+        Box::into_raw(vec![0; len].into_boxed_slice()) as *mut c_void
     }
 }
 
@@ -37,6 +37,7 @@ impl<'a> From<&'a mut Box<[u8]>> for ByteBufferOutputAdapterConfig<'a> {
         unsafe {
             let old = take(value);
             let output: &mut Option<Box<[u8]>> = transmute(value);
+            forget(take(output));
             let out_byte_buffer_ptr = output as *mut Option<Box<[u8]>> as *mut *mut u8;
 
             // Since boxed slices are a pointer and then a length, we extract the pointer
