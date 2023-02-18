@@ -1,3 +1,4 @@
+/// The set of default adapters that come built-in.
 pub mod adapters;
 
 #[cfg(test)]
@@ -10,7 +11,9 @@ use std::any::*;
 use std::error::*;
 use std::ffi::*;
 use std::marker::*;
+use std::mem::*;
 use std::ops::*;
+use std::slice::*;
 use std::sync::*;
 
 /// Copies a range of voxel data from the specified input
@@ -40,6 +43,8 @@ pub fn blit_region(
     }
 }
 
+/// Stores the capabilities, information, and state about a set of voxel blitting operations.
+/// Adapters can be created or obtained from contexts.
 #[derive(Clone, Debug, Default)]
 pub struct Context(Arc<Mutex<ContextInner>>);
 
@@ -54,6 +59,11 @@ impl Context {
         let ptr = self.execute_inner(|ctx| ctx.get_raw_adapter::<K, A>())?;
 
         Ok(Adapter { ctx: self.clone(), ptr, data: PhantomData::default() })
+    }
+
+    pub fn register_input_adapter<A: AdapterDescriptor<Input> + NamedAdapter>(&self) -> Result<Adapter<Input, A>, GvoxError> where A::Handler: InputAdapterHandler<A> {
+        self.execute_inner(|ctx| ctx.register_input_adapter::<A>())?;
+        self.get_adapter::<Input, A>()
     }
 
     /// Retrieves a raw handle to the context.
@@ -122,6 +132,22 @@ impl ContextInner {
         }
     }
 
+    /// Registers an input adapter for voxel conversion operations, and returns a raw pointer to the adapter.
+    fn register_input_adapter<A: AdapterDescriptor<Input> + NamedAdapter>(&mut self) -> Result<*mut gvox_sys::GvoxAdapter, GvoxError> where A::Handler: InputAdapterHandler<A> {
+        unsafe {
+            let name = CString::new(A::name()).expect("Failed to convert Rust string to C string");
+            let adapter_info = gvox_sys::GvoxInputAdapterInfo {
+                base_info: gvox_sys::GvoxAdapterBaseInfo { name_str: name.as_ptr(), create: Some(AdapterContextHolder::create::<Input, A>), destroy: Some(AdapterContextHolder::destroy::<Input, A>),
+                blit_begin: Some(InputContextHolder::blit_begin::<A>), blit_end: Some(InputContextHolder::blit_end::<A>) },
+                read: Some(InputContextHolder::read::<A>)
+            };
+            let adapter = gvox_sys::gvox_register_input_adapter(self.ptr, &adapter_info);
+            self.get_error()?;
+            self.add_external_adapter::<Input, A>()?;
+            Ok(adapter)
+        }
+    }
+
     /// Obtains a raw pointer to a new adapter context, using the given adapter and configuration.
     /// 
     /// # Safety
@@ -143,7 +169,7 @@ impl ContextInner {
     /// with the given name on the underlying context. The adapter must support operations
     /// for the selected adapter kind, and the configuration structure that the adapter accepts
     /// must match that of the underlying context.
-    pub unsafe fn add_external_adapter<K: AdapterKind, A: NamedAdapter>(&mut self) -> Result<(), GvoxError> {
+    pub unsafe fn add_external_adapter<K: AdapterKind, A: AdapterDescriptor<K> + NamedAdapter>(&mut self) -> Result<(), GvoxError> {
         let id = AdapterIdentifier::new::<K, A>();
         if self.registered_adapter_types.contains_key(&id) {
             Err(GvoxError::new(ErrorType::InvalidParameter, "Attempted to register duplicate adapter.".to_string()))
@@ -175,28 +201,33 @@ impl ContextInner {
     /// Flushes the context error stack, and returns the topmost error.
     fn get_error(&self) -> Result<(), GvoxError> {
         unsafe {
-            let result = gvox_sys::gvox_get_result(self.ptr);
-            (result == gvox_sys::GvoxResult_GVOX_RESULT_SUCCESS).then_some(()).ok_or_else(|| {
-                let mut buf: Vec<u8> = Vec::new();
-
-                let mut msg_size: usize = usize::MAX;
-                while msg_size != 0 {
-                    gvox_sys::gvox_get_result_message(self.ptr, 0 as *mut i8, &mut msg_size);
-                    buf.resize(msg_size, 0);
-                    gvox_sys::gvox_get_result_message(
-                        self.ptr,
-                        buf.as_mut_ptr() as *mut i8,
-                        &mut msg_size,
-                    );
-                    
-                    if msg_size > 0 {
-                        gvox_sys::gvox_pop_result(self.ptr);
-                    }
-                }
-
-                GvoxError::new(ErrorType::from_int(result).unwrap_or(ErrorType::Unknown), std::str::from_utf8(buf.as_slice()).unwrap_or_default().to_string())
-            })
+            Self::get_error_from_raw_ptr(self.ptr)
         }
+    }
+
+    /// Flushes the error stack of the provided context, and returns the topmost error.
+    pub unsafe fn get_error_from_raw_ptr(ptr: *mut gvox_sys::GvoxContext) -> Result<(), GvoxError> {
+        let result = gvox_sys::gvox_get_result(ptr);
+        (result == gvox_sys::GvoxResult_GVOX_RESULT_SUCCESS).then_some(()).ok_or_else(|| {
+            let mut buf: Vec<u8> = Vec::new();
+
+            let mut msg_size: usize = usize::MAX;
+            while msg_size != 0 {
+                gvox_sys::gvox_get_result_message(ptr, 0 as *mut i8, &mut msg_size);
+                buf.resize(msg_size, 0);
+                gvox_sys::gvox_get_result_message(
+                    ptr,
+                    buf.as_mut_ptr() as *mut i8,
+                    &mut msg_size,
+                );
+                
+                if msg_size > 0 {
+                    gvox_sys::gvox_pop_result(ptr);
+                }
+            }
+
+            GvoxError::new(ErrorType::from_int(result).unwrap_or(ErrorType::Unknown), std::str::from_utf8(buf.as_slice()).unwrap_or_default().to_string())
+        })
     }
 }
 
@@ -257,6 +288,11 @@ impl<K: AdapterKind, A: AdapterDescriptor<K>> Adapter<K, A> {
         unsafe {
             let ctx = self.context();
             let ptr = self.ctx.execute_inner(|ctx| ctx.create_raw_adapter_context(self.ptr, config as *const A::Configuration<'a> as *const c_void))?;
+
+            if !ExternalHandler::is_external::<K, A>() {
+                AdapterContextHolder::from_raw(ptr).get_context_data().expect("No user data was associated with context.").ctx = self.ctx.as_mut_ptr();
+            }
+            
             Ok(AdapterContext { ctx, ptr, data: PhantomData::default() })
         }
     }
@@ -267,6 +303,7 @@ impl<K: AdapterKind, A: AdapterDescriptor<K>> Adapter<K, A> {
     }
 }
 
+/// One specific instance of a configured adapter that can be used to perform blitting operations.
 #[derive(Debug, PartialEq, Eq)]
 pub struct AdapterContext<'a, K: AdapterKind> {
     ctx: Context,
@@ -321,10 +358,23 @@ pub struct Serialize;
 
 impl AdapterKind for Serialize {}
 
+/// Marks types that which have blit callbacks handled externally.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
+pub struct ExternalHandler;
+
+impl ExternalHandler {
+    /// Determines whether the provided adapter descriptor is an externally managed (native) adapter.
+    pub fn is_external<K: AdapterKind, A: AdapterDescriptor<K>>() -> bool {
+        TypeId::of::<Self>() == TypeId::of::<A::Handler>()
+    }
+}
+
 /// Describes the layout of an adapter and its configuration type.
 pub trait AdapterDescriptor<K: AdapterKind>: 'static {
     /// The datastructure that this adapter accepts during context creation.
     type Configuration<'a>;
+    /// The datastructure that stores user state and handles adapter callbacks.
+    type Handler: ?Sized;
 }
 
 /// Represents an adapter which may be queried by name from a context.
@@ -333,15 +383,197 @@ pub trait NamedAdapter: 'static {
     fn name() -> &'static str;
 }
 
-pub trait AdapterContextHandler<K: AdapterKind>: 'static {
-    fn blit_begin(blit_ctx: &()) -> Self;
-    fn blit_end(self, blit_ctx: &());
+/// Stores adapter context data.
+struct AdapterContextData {
+    /// The context with which this data is associated.
+    pub ctx: *mut gvox_sys::GvoxContext,
+    /// The adapter context with which this data is associated.
+    pub ptr: *mut gvox_sys::GvoxAdapterContext,
+    /// The user data that is associated with the current context.
+    pub user_data: Option<Box<dyn Any>>
 }
 
-pub trait InputAdapter: AdapterContextHandler<Input> {
-    fn read(&mut self, data: &mut [u8]);
+/// Provides the ability to access adapter context data.
+struct AdapterContextHolder(*mut gvox_sys::GvoxAdapterContext);
+
+impl AdapterContextHolder {
+    /// Creates a new adapter context holder from the provided pointer.
+    /// 
+    /// # Safety
+    /// 
+    /// For this function call to be sound, the pointer must point to a valid context
+    /// that was initialized by `gvox_rs`, and no other context holder to this pointer
+    /// must exist. Further, the `gvox_rs` context must be locked for the entirety of this
+    /// holder's lifetime.
+    pub unsafe fn from_raw(ctx: *mut gvox_sys::GvoxAdapterContext) -> Self {
+        Self(ctx)
+    }
+
+    /// Retrieves a raw pointer to the underlying adapter context.
+    pub fn as_mut_ptr(&self) -> *mut gvox_sys::GvoxAdapterContext {
+        self.0
+    }
+
+    /// Gets the error associated with the most recent operation.
+    pub fn get_result(&mut self) -> Result<(), GvoxError> {
+        unsafe {
+            ContextInner::get_error_from_raw_ptr(self.get_context_data().expect("No data was associated with the given adapter context.").ctx)
+        }
+    }
+
+    /// Pushes a new error to the underlying context.
+    pub fn push_error(&mut self, error: GvoxError) {
+        unsafe {
+            let message = CString::new(error.message.as_str()).unwrap_or_default();
+            gvox_sys::gvox_adapter_push_error(self.0, error.error_type() as i32, message.as_ptr());
+        }
+    }
+
+    /// Applies an operation to the held user data object, or panics if the user data object type did not match.
+    pub fn user_data_operation<H: 'static>(&mut self, f: impl FnOnce(&mut H) -> Result<(), GvoxError>) {
+        let mut result = Ok(());
+        if let Some(data) = self.get_user_data_holder() {
+            result = f(data.downcast_mut::<H>().expect("Context user data was not of correct type."));
+        }
+        
+        if let Err(error) = result {
+            self.push_error(error);
+        }
+    }
+
+    /// Retrieves a reference to holder for adapter user data.
+    pub fn get_user_data_holder(&mut self) -> &mut Option<Box<dyn Any>> {
+        &mut self.get_context_data().expect("No data was associated with the given adapter context.").user_data
+    }
+    
+    /// Retrieves a reference to the context's data, if it is set.
+    fn get_context_data(&mut self) -> Option<&mut AdapterContextData> {
+        unsafe {
+            let res = gvox_sys::gvox_adapter_get_user_pointer(self.0) as *mut AdapterContextData;
+            (!res.is_null()).then(|| &mut *res)
+        }
+    }
+
+    /// Sets the context data to the provided value, returning the data that was previously overwritten.
+    fn set_context_data(&mut self, data: Option<AdapterContextData>) -> Option<AdapterContextData> {
+        unsafe {
+            let res = gvox_sys::gvox_adapter_get_user_pointer(self.0) as *mut AdapterContextData;
+            gvox_sys::gvox_adapter_set_user_pointer(self.0, data.map(|x| Box::into_raw(Box::new(x)) as *mut c_void).unwrap_or(std::ptr::null_mut()));
+            (!res.is_null()).then(|| *Box::from_raw(res))
+        }
+    }
+
+    /// Invokes the adapter context creation function for the given adapter type.
+    /// 
+    /// # Safety
+    /// 
+    /// The provided adapter context pointer must be initializable as a valid context holder,
+    /// and config must point to a valid configuration object.
+    unsafe extern "C" fn create<K: AdapterKind, D: AdapterDescriptor<K>>(ptr: *mut gvox_sys::GvoxAdapterContext, config: *const c_void) where D::Handler: BaseAdapterHandler<K, D> {
+        let mut ctx = Self::from_raw(ptr);
+        ctx.set_context_data(Some(AdapterContextData { ctx: std::ptr::null_mut(), ptr, user_data: None }));
+
+        match D::Handler::create(&*(config as *const D::Configuration<'_>)) {
+            Ok(value) => *ctx.get_user_data_holder() = Some(Box::new(value)),
+            Err(error) => ctx.push_error(error)
+        };
+    }
+
+    /// Invokes the adapter context deletion function for the given adapter type.
+    /// 
+    /// # Safety
+    /// 
+    /// The provided adapter context pointer must be initializable as a valid context holder,
+    /// and config must point to a valid configuration object.
+    unsafe extern "C" fn destroy<K: AdapterKind, D: AdapterDescriptor<K>>(ctx: *mut gvox_sys::GvoxAdapterContext) where D::Handler: BaseAdapterHandler<K, D> {
+        let mut ctx = Self::from_raw(ctx);
+        let data = take(ctx.get_user_data_holder());
+
+        if let Some(value) = data {
+            if let Err(error) = value.downcast::<D::Handler>().expect("Context user data was not of correct type.").destroy() {
+                ctx.push_error(error);
+            }
+        }
+
+        ctx.set_context_data(None);
+    }
 }
 
+/// Provides the ability to access input adapter context data.
+struct InputContextHolder(AdapterContextHolder);
+
+impl InputContextHolder {
+    /// Creates a new input adapter context holder from the provided pointer.
+    /// 
+    /// # Safety
+    /// 
+    /// For this function call to be sound, the pointer must point to a valid input
+    /// adapter context, and all of the invariants required by `AdapterContextHolder::from_raw`
+    /// must be satisfied.
+    unsafe fn from_raw(ctx: *mut gvox_sys::GvoxAdapterContext) -> Self {
+        Self(AdapterContextHolder::from_raw(ctx))
+    }
+
+    /// Invokes the adapter context blit beginning function for the given adapter type.
+    /// 
+    /// # Safety
+    /// 
+    /// The provided adapter context pointer must be initializable as a valid input context holder.
+    unsafe extern "C" fn blit_begin<D: AdapterDescriptor<Input>>(_: *mut gvox_sys::GvoxBlitContext, ctx: *mut gvox_sys::GvoxAdapterContext) where D::Handler: InputAdapterHandler<D> {
+        let mut ctx = Self::from_raw(ctx);
+        let blit_ctx = InputBlitContext();
+
+        ctx.0.user_data_operation::<D::Handler>(|h| h.blit_begin(&blit_ctx));
+    }
+
+    /// Invokes the adapter context blit ending function for the given adapter type.
+    /// 
+    /// # Safety
+    /// 
+    /// The provided adapter context pointer must be initializable as a valid input context holder.
+    unsafe extern "C" fn blit_end<D: AdapterDescriptor<Input>>(_: *mut gvox_sys::GvoxBlitContext, ctx: *mut gvox_sys::GvoxAdapterContext) where D::Handler: InputAdapterHandler<D> {
+        let mut ctx = Self::from_raw(ctx);
+        let blit_ctx = InputBlitContext();
+
+        ctx.0.user_data_operation::<D::Handler>(|h| h.blit_end(&blit_ctx));
+    }
+
+    /// Invokes the adapter context reading function for the given adapter type.
+    /// 
+    /// # Safety
+    /// 
+    /// The provided adapter context pointer must be initializable as a valid input context holder,
+    /// and size and data must describe a valid, writeable section of memory.
+    unsafe extern "C" fn read<D: AdapterDescriptor<Input>>(ctx: *mut gvox_sys::GvoxAdapterContext, position: usize, size: usize, data: *mut c_void) where D::Handler: InputAdapterHandler<D> {
+        let mut ctx = Self::from_raw(ctx);
+        let blit_ctx = InputBlitContext();
+
+        ctx.0.user_data_operation::<D::Handler>(|h| h.read(&blit_ctx, position, from_raw_parts_mut(data as *mut u8, size)));
+    }
+}
+
+/// Provides the ability for an input adapter to interact with other adapters during blit operations.
+pub struct InputBlitContext();
+
+/// Represents the user data type that handles adapter context operations.
+pub trait BaseAdapterHandler<K: AdapterKind, D: AdapterDescriptor<K, Handler = Self>>: 'static + Sized {
+    /// Creates a new adapter context handler with the supplied configuration.
+    fn create(config: &D::Configuration<'_>) -> Result<Self, GvoxError>; 
+    /// Destroys the provided adapter context handler.
+    fn destroy(self) -> Result<(), GvoxError>;
+}
+
+/// Represents the user data type that handles input adapter context operations.
+pub trait InputAdapterHandler<D: AdapterDescriptor<Input, Handler = Self>>: BaseAdapterHandler<Input, D> {
+    /// Called whenever a blit operation begins for the current context.
+    fn blit_begin(&mut self, blit_ctx: &InputBlitContext) -> Result<(), GvoxError> { Ok(()) }
+    /// Called whenever a blit operation ends for the current context.
+    fn blit_end(&mut self, blit_ctx: &InputBlitContext) -> Result<(), GvoxError> { Ok(()) }
+    /// Called when another adapter attempts to read from the given input.
+    fn read(&mut self, blit_ctx: &InputBlitContext, position: usize, data: &mut [u8]) -> Result<(), GvoxError>;
+}
+
+/*
 pub trait OutputAdapter: AdapterContextHandler<Output> {
     fn write(&mut self, position: usize, data: &[u8]);
     fn reserve(&mut self, size: usize);
@@ -355,14 +587,17 @@ pub trait ParseAdapter: AdapterContextHandler<Parse> {
 
 pub trait SerializeAdapter: AdapterContextHandler<Serialize> {
     fn serialize_region(&mut self, blit_ctx: (), range: &RegionRange, channel_flags: ChannelFlags);
-}
+}*/
 
 /// Represents an offset on a 3D grid.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 #[repr(C)]
 pub struct Offset3D {
+    /// The x-component of the offset.
     pub x: i32,
+    /// The y-component of the offset.
     pub y: i32,
+    /// The z-component of the offset.
     pub z: i32,
 }
 
@@ -370,8 +605,11 @@ pub struct Offset3D {
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 #[repr(C)]
 pub struct Extent3D {
+    /// The x-length of the dimensions.
     pub x: i32,
+    /// The y-length of the dimensions.
     pub y: i32,
+    /// The z-length of the dimensions.
     pub z: i32,
 }
 
@@ -379,7 +617,9 @@ pub struct Extent3D {
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 #[repr(C)]
 pub struct RegionRange {
+    /// The position of the minimum corner of the region.
     pub offset: Offset3D,
+    /// The dimensions of the region.
     pub extent: Extent3D,
 }
 
@@ -416,7 +656,8 @@ pub struct GvoxError {
 
 impl GvoxError {
     /// Creates a new error with the provided type and reason message.
-    pub fn new(ty: ErrorType, message: String) -> Self {
+    pub fn new(ty: ErrorType, message: impl Into<String>) -> Self {
+        let message = Into::<String>::into(message);
         Self { ty, message }
     }
 
