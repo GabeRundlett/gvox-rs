@@ -25,8 +25,12 @@ impl NamedAdapter for ByteBuffer {
 #[derive(Debug)]
 #[repr(C)]
 pub struct ByteBufferOutputAdapterConfig<'a> {
+    /// A configuration describing how the native adapter should write its output.
     config: gvox_sys::GvoxByteBufferOutputAdapterConfig,
+    /// A reference to the output buffer to which the adapter should write.
     output: &'a mut Option<Box<[u8]>>,
+    /// The original byte buffer that lived at the referenced output. The output will replace
+    /// this buffer only if the adapter writes to the output.
     old: Box<[u8]>
 }
 
@@ -90,7 +94,10 @@ impl NamedAdapter for File {
 #[derive(Clone, Debug)]
 #[repr(C)]
 pub struct FileInputAdapterConfig {
+    /// A configuration describing the file that the adapter should use. This member must come first
+    /// in order for the native adapter to use it.
     config: gvox_sys::GvoxFileInputAdapterConfig,
+    /// The name of this file. This must outlive `config`, which references the underlying buffer.
     file_name: CString
 }
 
@@ -112,7 +119,10 @@ impl FileInputAdapterConfig {
 #[derive(Clone, Debug)]
 #[repr(C)]
 pub struct FileOutputAdapterConfig {
+    /// A configuration describing the file that the adapter should use. This member must come first
+    /// in order for the native adapter to use it.
     config: gvox_sys::GvoxFileOutputAdapterConfig,
+    /// The name of this file. This must outlive `config`, which references the underlying buffer.
     file_name: CString
 }
 
@@ -147,7 +157,9 @@ impl NamedAdapter for ColoredText {
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[repr(i32)]
 pub enum ColoredTextSerializeAdapterDownscaleMode {
+    /// The nearest voxel's value should be taken during filtering.
     Nearest = 0,
+    /// Linear blending should be utilized to filter the voxels.
     Linear = 1
 }
 

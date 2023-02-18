@@ -28,19 +28,19 @@ pub fn gvox_rs_test_procedural() {
         };
     
         let mut i_ctx = gvox_ctx.get_adapter::<gvox_rs::Input, gvox_rs::adapters::ByteBuffer>()
-            .expect("Failed to get byte buffer input adapter.").create_adapter_context(&BYTES)
+            .expect("Failed to get byte buffer input adapter.").create_adapter_context(BYTES)
             .expect("Failed to create adapter context.");
     
         let mut o_ctx = gvox_ctx.get_adapter::<gvox_rs::Output, gvox_rs::adapters::ByteBuffer>()
-            .expect("Failed to get byte buffer input adapter.").create_adapter_context(&o_config)
+            .expect("Failed to get byte buffer input adapter.").create_adapter_context(o_config)
             .expect("Failed to create adapter context.");
         
         let mut p_ctx = gvox_ctx.get_adapter::<gvox_rs::Parse, gvox_rs::adapters::GvoxPalette>()
-            .expect("Failed to get byte buffer input adapter.").create_adapter_context(&())
+            .expect("Failed to get byte buffer input adapter.").create_adapter_context(())
             .expect("Failed to create adapter context.");
     
         let mut s_ctx = gvox_ctx.get_adapter::<gvox_rs::Serialize, gvox_rs::adapters::ColoredText>()
-            .expect("Failed to get byte buffer input adapter.").create_adapter_context(&s_config)
+            .expect("Failed to get byte buffer input adapter.").create_adapter_context(s_config)
             .expect("Failed to create adapter context.");
     
         let region = gvox_rs::RegionRange {
@@ -80,19 +80,19 @@ fn test_blit_error() {
     };
 
     let mut i_ctx = gvox_ctx.get_adapter::<gvox_rs::Input, gvox_rs::adapters::ByteBuffer>()
-        .expect("Failed to get byte buffer input adapter.").create_adapter_context(&BYTES)
+        .expect("Failed to get byte buffer input adapter.").create_adapter_context(BYTES)
         .expect("Failed to create adapter context.");
 
     let mut o_ctx = gvox_ctx.get_adapter::<gvox_rs::Output, gvox_rs::adapters::ByteBuffer>()
-        .expect("Failed to get byte buffer input adapter.").create_adapter_context(&o_config)
+        .expect("Failed to get byte buffer input adapter.").create_adapter_context(o_config)
         .expect("Failed to create adapter context.");
     
     let mut p_ctx = gvox_ctx.get_adapter::<gvox_rs::Parse, gvox_rs::adapters::GvoxPalette>()
-        .expect("Failed to get byte buffer input adapter.").create_adapter_context(&())
+        .expect("Failed to get byte buffer input adapter.").create_adapter_context(())
         .expect("Failed to create adapter context.");
 
     let mut s_ctx = gvox_ctx.get_adapter::<gvox_rs::Serialize, gvox_rs::adapters::ColoredText>()
-        .expect("Failed to get byte buffer input adapter.").create_adapter_context(&s_config)
+        .expect("Failed to get byte buffer input adapter.").create_adapter_context(s_config)
         .expect("Failed to create adapter context.");
 
     let region = gvox_rs::RegionRange {
@@ -116,20 +116,20 @@ fn test_blit_error() {
     assert!(matches!(res, Err(gvox_rs::ErrorType::ParseAdapterRequestedChannelNotPresent)));
 }
 
-pub struct PalleteGvoxInputAdapter;
+pub struct CustomAdapter;
 
-impl gvox_rs::AdapterDescriptor<gvox_rs::Input> for PalleteGvoxInputAdapter {
+impl gvox_rs::AdapterDescriptor<gvox_rs::Input> for CustomAdapter {
     type Configuration<'a> = ();
     type Handler = Self;
 }
 
-impl gvox_rs::NamedAdapter for PalleteGvoxInputAdapter {
+impl gvox_rs::NamedAdapter for CustomAdapter {
     fn name() -> &'static str {
         "palette_gvox_input_adapter"
     }
 }
 
-impl gvox_rs::BaseAdapterHandler<gvox_rs::Input, Self> for PalleteGvoxInputAdapter {
+impl gvox_rs::BaseAdapterHandler<gvox_rs::Input, Self> for CustomAdapter {
     fn create(config: &()) -> Result<Self, gvox_rs::GvoxError> {
         Ok(Self)
     }
@@ -139,7 +139,7 @@ impl gvox_rs::BaseAdapterHandler<gvox_rs::Input, Self> for PalleteGvoxInputAdapt
     }
 }
 
-impl gvox_rs::InputAdapterHandler<PalleteGvoxInputAdapter> for PalleteGvoxInputAdapter {
+impl gvox_rs::InputAdapterHandler<CustomAdapter> for CustomAdapter {
     fn read(&mut self, blit_ctx: &gvox_rs::InputBlitContext, position: usize, data: &mut [u8]) -> Result<(), gvox_rs::GvoxError> {
         if position + data.len() <= BYTES.len() {
             data.clone_from_slice(&BYTES[position..position + data.len()]);
@@ -157,7 +157,7 @@ pub fn gvox_rs_test_rust_adapter() {
 
     {
         let gvox_ctx = gvox_rs::Context::new();
-        gvox_ctx.register_adapter::<gvox_rs::Input, PalleteGvoxInputAdapter>();
+        gvox_ctx.register_adapter::<gvox_rs::Input, CustomAdapter>();
 
         let o_config = gvox_rs::adapters::ByteBufferOutputAdapterConfig::from(&mut o_buffer);
     
@@ -167,20 +167,20 @@ pub fn gvox_rs_test_rust_adapter() {
             non_color_max_value: 5,
         };
     
-        let mut i_ctx = gvox_ctx.get_adapter::<gvox_rs::Input, PalleteGvoxInputAdapter>()
-            .expect("Failed to get custom input adapter.").create_adapter_context(&())
+        let mut i_ctx = gvox_ctx.get_adapter::<gvox_rs::Input, CustomAdapter>()
+            .expect("Failed to get custom input adapter.").create_adapter_context(())
             .expect("Failed to create adapter context.");
     
         let mut o_ctx = gvox_ctx.get_adapter::<gvox_rs::Output, gvox_rs::adapters::ByteBuffer>()
-            .expect("Failed to get byte buffer input adapter.").create_adapter_context(&o_config)
+            .expect("Failed to get byte buffer input adapter.").create_adapter_context(o_config)
             .expect("Failed to create adapter context.");
         
         let mut p_ctx = gvox_ctx.get_adapter::<gvox_rs::Parse, gvox_rs::adapters::GvoxPalette>()
-            .expect("Failed to get byte buffer input adapter.").create_adapter_context(&())
+            .expect("Failed to get byte buffer input adapter.").create_adapter_context(())
             .expect("Failed to create adapter context.");
     
         let mut s_ctx = gvox_ctx.get_adapter::<gvox_rs::Serialize, gvox_rs::adapters::ColoredText>()
-            .expect("Failed to get byte buffer input adapter.").create_adapter_context(&s_config)
+            .expect("Failed to get byte buffer input adapter.").create_adapter_context(s_config)
             .expect("Failed to create adapter context.");
     
         let region = gvox_rs::RegionRange {
