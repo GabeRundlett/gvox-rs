@@ -46,10 +46,11 @@ fn main() {
     use std::env;
     use std::path::PathBuf;
     println!("cargo:rerun-if-changed=src/gvox.h");
+    println!("cargo:rerun-if-changed=gvox");
     let bindings = bindgen::Builder::default()
         .clang_arg("--target=x86_64-pc-windows-msvc")
         .clang_arg("--language=c")
-        .clang_arg("-DGVOX_ENABLE_FILE_IO=0")
+        .clang_arg("-DGVOX_ENABLE_FILE_IO=1")
         .header("src/gvox.h")
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
         .generate()
