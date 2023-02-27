@@ -177,6 +177,8 @@ pub struct ColoredTextSerializeAdapterConfig {
     pub downscale_mode: ColoredTextSerializeAdapterDownscaleMode,
     /// The value that should be considered greatest when handling non-color data.
     pub non_color_max_value: u32,
+    /// Whether each layer should be printed below the last, as opposed to the right of the last
+    pub vertical: bool,
 }
 
 impl Default for ColoredTextSerializeAdapterConfig {
@@ -185,6 +187,7 @@ impl Default for ColoredTextSerializeAdapterConfig {
             downscale_factor: 1,
             downscale_mode: ColoredTextSerializeAdapterDownscaleMode::Nearest,
             non_color_max_value: 0,
+            vertical: false,
         }
     }
 }

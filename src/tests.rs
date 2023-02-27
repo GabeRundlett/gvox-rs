@@ -28,6 +28,7 @@ pub fn gvox_rs_test_procedural() {
             downscale_factor: 1,
             downscale_mode: gvox_rs::adapters::ColoredTextSerializeAdapterDownscaleMode::Nearest,
             non_color_max_value: 5,
+            vertical: false,
         };
 
         let mut i_ctx = gvox_ctx
@@ -98,6 +99,7 @@ fn test_blit_error() {
         downscale_factor: 1,
         downscale_mode: gvox_rs::adapters::ColoredTextSerializeAdapterDownscaleMode::Nearest,
         non_color_max_value: 5,
+        vertical: false,
     };
 
     let mut i_ctx = gvox_ctx
@@ -205,6 +207,7 @@ pub fn gvox_rs_test_rust_adapter() {
             downscale_factor: 1,
             downscale_mode: gvox_rs::adapters::ColoredTextSerializeAdapterDownscaleMode::Nearest,
             non_color_max_value: 5,
+            vertical: false,
         };
 
         let mut i_ctx = gvox_ctx

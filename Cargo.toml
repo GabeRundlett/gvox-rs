@@ -1,6 +1,6 @@
 [package]
 name = "gvox-rs"
-version = "1.0.0"
+version = "1.1.0"
 edition = "2021"
 license = "MIT"
 description = "Voxel file format parser"
@@ -12,5 +12,5 @@ repository = "https://github.com/GabeRundlett/gvox-rs"
 [dependencies]
 bitflags = "1.3.2"
 fxhash = "0.2.1"
-gvox-sys = { path = "gvox-sys", version = "1.0.1", default-features = false }
+gvox-sys = { path = "gvox-sys", version = "1.1.0", default-features = false }
 int-enum = "0.5.0"

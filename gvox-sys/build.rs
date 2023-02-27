@@ -6,6 +6,8 @@ fn main() {
             .build_target("gvox")
             .generator("Ninja Multi-Config")
             .configure_arg("-DGVOX_BUILD_FOR_RUST=1")
+            .configure_arg("-DGVOX_BUILD_FOR_WEB=1")
+            .configure_arg("-DBUILD_SHARED_LIBS=OFF")
             .configure_arg(format!("-DCMAKE_TOOLCHAIN_FILE={}/scripts/buildsystems/vcpkg.cmake", std::env::var("VCPKG_ROOT").unwrap()))
             .configure_arg(format!("-DVCPKG_OVERLAY_TRIPLETS={}/gvox/cmake/vcpkg_triplets", std::env::current_dir().unwrap().display()))
             .configure_arg("-DVCPKG_TARGET_TRIPLET=wasm32-wasisdk")
@@ -31,6 +33,7 @@ fn main() {
             .build_target("gvox")
             .profile(get_profile())
             .configure_arg("-DGVOX_BUILD_FOR_RUST=1")
+            .configure_arg("-DBUILD_SHARED_LIBS=OFF")
             .configure_arg(format!(
                 "-DGVOX_USE_STATIC_CRT={}",
                 if static_crt { 1 } else { 0 }
@@ -51,6 +54,7 @@ fn main() {
         .clang_arg("--target=x86_64-pc-windows-msvc")
         .clang_arg("--language=c")
         .clang_arg("-DGVOX_ENABLE_FILE_IO=1")
+        .clang_arg("-DGVOX_EXPORT=")
         .header("src/gvox.h")
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
         .generate()
