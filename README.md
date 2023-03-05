@@ -1,8 +1,8 @@
 # gvox-rs
 ## Safe, high-level Rust API for the [GVOX voxel data library](https://github.com/GabeRundlett/gvox)
 
-[![Crates.io](https://img.shields.io/crates/v/gvox_rs.svg)](https://crates.io/crates/gvox_rs)
-[![Docs.rs](https://docs.rs/gvox_rs/badge.svg)](https://docs.rs/gvox_rs)
+[![Crates.io](https://img.shields.io/crates/v/gvox-rs.svg)](https://crates.io/crates/gvox-rs)
+[![Docs.rs](https://docs.rs/gvox-rs/badge.svg)](https://docs.rs/gvox-rs)
 
 This library supplies an idiomatic Rust abstraction over the GVOX C API. It provides type safety, memory safety, and thread safety
 without any significant deviation from the C library's design. For more information on the API's design, see the [GVOX Wiki](https://github.com/GabeRundlett/gvox/wiki).

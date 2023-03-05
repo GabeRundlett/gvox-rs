@@ -871,6 +871,7 @@ impl ParseContextHolder {
         Self(AdapterContextHolder::from_raw(ctx))
     }
 
+    /// Invokes the adapter details querying function for the given adapter type.
     unsafe extern "C" fn query_details<D: AdapterDescriptor<Parse>>(
     ) -> gvox_sys::GvoxParseAdapterDetails
     where
@@ -882,6 +883,12 @@ impl ParseContextHolder {
         }
     }
 
+    /// Invokes the adapter context parsable range querying function for the given adapter type.
+    ///
+    /// # Safety
+    ///
+    /// The provided adapter context pointer must be initializable as a valid parse context holder,
+    /// and size and data must describe a valid, readable section of memory.
     unsafe extern "C" fn query_parsable_range<D: AdapterDescriptor<Parse>>(
         blit_ctx: *mut gvox_sys::GvoxBlitContext,
         ctx: *mut gvox_sys::GvoxAdapterContext,
@@ -1095,6 +1102,12 @@ impl SerializeContextHolder {
         });
     }
 
+    /// Invokes the adapter context receiving function for the given adapter type.
+    ///
+    /// # Safety
+    ///
+    /// The provided adapter context pointer must be initializable as a valid serialize context holder,
+    /// and size and data must describe a valid, readable section of memory.
     unsafe extern "C" fn receive_region<D: AdapterDescriptor<Serialize>>(
         blit_ctx: *mut gvox_sys::GvoxBlitContext,
         ctx: *mut gvox_sys::GvoxAdapterContext,
@@ -1114,6 +1127,8 @@ impl SerializeContextHolder {
 
         ctx.0
             .user_data_operation::<D::Handler>(|h| h.receive_region(&blit_ctx, &region_ref));
+
+        std::mem::forget(region_ref);
     }
 }
 
@@ -1145,6 +1160,7 @@ impl ParseBlitContext {
         }
     }
 
+    /// Supplies a parsable region directly to the serialize adapter, meant to only be called from parse_region
     pub fn emit_region<T>(&self, region: &Region<T>) -> Result<(), GvoxError> {
         unsafe {
             gvox_sys::gvox_emit_region(
@@ -1284,10 +1300,10 @@ pub trait ParseAdapterHandler<D: AdapterDescriptor<Parse, Handler = Self>>:
     /// The loaded data associated with a given region of voxels.
     type RegionData;
 
+    /// Provides the adapter-wide information, such as whether the adapter prefers to blit as parse-driven or as serialize-driven.
     fn query_details() -> ParseAdapterDetails;
-
+    /// After the parse adapter has had blit_begin called, this will provide the offset and extent of the parsable range of the given input.
     fn query_parsable_range(&mut self, blit_ctx: &ParseBlitContext) -> RegionRange;
-
     /// Determines the flags that all voxels in the given region share.
     fn query_region_flags(
         &mut self,
@@ -1316,6 +1332,7 @@ pub trait ParseAdapterHandler<D: AdapterDescriptor<Parse, Handler = Self>>:
         offset: &Offset3D,
         channel_id: ChannelId,
     ) -> Result<Sample, GvoxError>;
+    /// Called when in parse-driven mode, to parse the entire requested range, emitting sample-able regions to be handled by the serialize adapter.
     fn parse_region(
         &mut self,
         blit_ctx: &ParseBlitContext,
@@ -1553,7 +1570,7 @@ pub enum ErrorType {
         gvox_sys::GvoxResult_GVOX_RESULT_ERROR_SERIALIZE_ADAPTER_UNREPRESENTABLE_DATA,
 }
 
-/// Describes the type of error that occurred during voxel conversion operations.
+/// Describes the blit mode of voxel conversion operations.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, IntEnum)]
 #[repr(i32)]
 pub enum BlitMode {
