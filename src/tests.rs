@@ -69,7 +69,7 @@ pub fn gvox_rs_test_procedural() {
             &mut o_ctx,
             &mut p_ctx,
             &mut s_ctx,
-            &region,
+            Some(&region),
             gvox_rs::ChannelId::COLOR
                 | gvox_rs::ChannelId::NORMAL
                 | gvox_rs::ChannelId::MATERIAL_ID,
@@ -140,7 +140,7 @@ fn test_blit_error() {
         &mut o_ctx,
         &mut p_ctx,
         &mut s_ctx,
-        &region,
+        Some(&region),
         gvox_rs::ChannelId::TRANSPARENCY.into(),
     )
     .map_err(|e| e.error_type());
@@ -248,7 +248,7 @@ pub fn gvox_rs_test_rust_adapter() {
             &mut o_ctx,
             &mut p_ctx,
             &mut s_ctx,
-            &region,
+            Some(&region),
             gvox_rs::ChannelId::COLOR
                 | gvox_rs::ChannelId::NORMAL
                 | gvox_rs::ChannelId::MATERIAL_ID,

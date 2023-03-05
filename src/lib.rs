@@ -95,7 +95,7 @@ pub fn blit_region(
     output_ctx: &mut AdapterContext<'_, Output>,
     parse_ctx: &mut AdapterContext<'_, Parse>,
     serialize_ctx: &mut AdapterContext<'_, Serialize>,
-    range: &RegionRange,
+    range: Option<&RegionRange>,
     channel_flags: ChannelFlags,
 ) -> Result<(), GvoxError> {
     unsafe {
@@ -105,7 +105,69 @@ pub fn blit_region(
                 output_ctx.as_mut_ptr(),
                 parse_ctx.as_mut_ptr(),
                 serialize_ctx.as_mut_ptr(),
-                range as *const RegionRange as *const gvox_sys::GvoxRegionRange,
+                if range.is_some() {
+                    range.unwrap() as *const RegionRange as *const gvox_sys::GvoxRegionRange
+                } else {
+                    std::ptr::null() as *const gvox_sys::GvoxRegionRange
+                },
+                channel_flags.into(),
+            );
+
+            ctx.get_error()
+        })
+    }
+}
+
+/// Does the same as blit_region, but explicitly sets the blit mode to prefer parse-driven
+pub fn blit_region_parse_driven(
+    input_ctx: &mut AdapterContext<'_, Input>,
+    output_ctx: &mut AdapterContext<'_, Output>,
+    parse_ctx: &mut AdapterContext<'_, Parse>,
+    serialize_ctx: &mut AdapterContext<'_, Serialize>,
+    range: Option<&RegionRange>,
+    channel_flags: ChannelFlags,
+) -> Result<(), GvoxError> {
+    unsafe {
+        input_ctx.context().execute_inner(|ctx| {
+            gvox_sys::gvox_blit_region_parse_driven(
+                input_ctx.as_mut_ptr(),
+                output_ctx.as_mut_ptr(),
+                parse_ctx.as_mut_ptr(),
+                serialize_ctx.as_mut_ptr(),
+                if range.is_some() {
+                    range.unwrap() as *const RegionRange as *const gvox_sys::GvoxRegionRange
+                } else {
+                    std::ptr::null() as *const gvox_sys::GvoxRegionRange
+                },
+                channel_flags.into(),
+            );
+
+            ctx.get_error()
+        })
+    }
+}
+
+/// Does the same as blit_region, but explicitly sets the blit mode to prefer serialize-driven
+pub fn blit_region_serialize_driven(
+    input_ctx: &mut AdapterContext<'_, Input>,
+    output_ctx: &mut AdapterContext<'_, Output>,
+    parse_ctx: &mut AdapterContext<'_, Parse>,
+    serialize_ctx: &mut AdapterContext<'_, Serialize>,
+    range: Option<&RegionRange>,
+    channel_flags: ChannelFlags,
+) -> Result<(), GvoxError> {
+    unsafe {
+        input_ctx.context().execute_inner(|ctx| {
+            gvox_sys::gvox_blit_region_serialize_driven(
+                input_ctx.as_mut_ptr(),
+                output_ctx.as_mut_ptr(),
+                parse_ctx.as_mut_ptr(),
+                serialize_ctx.as_mut_ptr(),
+                if range.is_some() {
+                    range.unwrap() as *const RegionRange as *const gvox_sys::GvoxRegionRange
+                } else {
+                    std::ptr::null() as *const gvox_sys::GvoxRegionRange
+                },
                 channel_flags.into(),
             );
 
@@ -653,6 +715,8 @@ impl AdapterContextHolder {
     unsafe extern "C" fn blit_begin<K: private::AdapterKindAssociation, D: AdapterDescriptor<K>>(
         blit_ctx: *mut gvox_sys::GvoxBlitContext,
         ctx: *mut gvox_sys::GvoxAdapterContext,
+        range: *const gvox_sys::GvoxRegionRange,
+        channel_flags: u32,
     ) where
         D::Handler: BaseAdapterHandler<K, D>,
     {
@@ -661,7 +725,17 @@ impl AdapterContextHolder {
         let mut ctx = Self::from_raw(ctx);
         let blit_ctx = K::BlitContext::new(ctx.context_mut_ptr(), blit_ctx);
 
-        ctx.user_data_operation::<D::Handler>(|h| h.blit_begin(&blit_ctx));
+        let mut_range;
+        let opt_range = if range.is_null() {
+            None
+        } else {
+            mut_range = (*range).into();
+            Some(&mut_range)
+        };
+
+        ctx.user_data_operation::<D::Handler>(|h| {
+            h.blit_begin(&blit_ctx, opt_range, channel_flags.into())
+        });
     }
 
     /// Invokes the adapter context blit ending function for the given adapter type.
@@ -797,6 +871,37 @@ impl ParseContextHolder {
         Self(AdapterContextHolder::from_raw(ctx))
     }
 
+    unsafe extern "C" fn query_details<D: AdapterDescriptor<Parse>>(
+    ) -> gvox_sys::GvoxParseAdapterDetails
+    where
+        D::Handler: ParseAdapterHandler<D>,
+    {
+        let details = D::Handler::query_details();
+        gvox_sys::GvoxParseAdapterDetails {
+            preferred_blit_mode: details.preferred_blit_mode as i32,
+        }
+    }
+
+    unsafe extern "C" fn query_parsable_range<D: AdapterDescriptor<Parse>>(
+        blit_ctx: *mut gvox_sys::GvoxBlitContext,
+        ctx: *mut gvox_sys::GvoxAdapterContext,
+    ) -> gvox_sys::GvoxRegionRange
+    where
+        D::Handler: ParseAdapterHandler<D>,
+    {
+        use private::*;
+        let mut ctx = Self::from_raw(ctx);
+        let blit_ctx = ParseBlitContext::new(ctx.0.context_mut_ptr(), blit_ctx);
+
+        let mut res = RegionRange::default();
+        ctx.0.user_data_operation::<D::Handler>(|h| {
+            res = h.query_parsable_range(&blit_ctx);
+            Ok(())
+        });
+
+        res.into()
+    }
+
     /// Invokes the adapter context querying function for the given adapter type.
     ///
     /// # Safety
@@ -898,7 +1003,7 @@ impl ParseContextHolder {
         region: *const gvox_sys::GvoxRegion,
         offset: *const gvox_sys::GvoxOffset3D,
         channel_id: u32,
-    ) -> u32
+    ) -> gvox_sys::GvoxSample
     where
         D::Handler: ParseAdapterHandler<D>,
     {
@@ -907,7 +1012,10 @@ impl ParseContextHolder {
         let mut ctx = Self::from_raw(ctx);
         let blit_ctx = ParseBlitContext::new(ctx.0.context_mut_ptr(), blit_ctx);
 
-        let mut res = 0;
+        let mut res = Sample {
+            data: 0,
+            is_present: false,
+        };
         ctx.0.user_data_operation::<D::Handler>(|h| {
             res = h.sample_region(
                 &blit_ctx,
@@ -919,7 +1027,28 @@ impl ParseContextHolder {
             )?;
             Ok(())
         });
-        res
+        gvox_sys::GvoxSample {
+            data: res.data,
+            is_present: res.is_present as u8,
+        }
+    }
+
+    unsafe extern "C" fn parse_region<D: AdapterDescriptor<Parse>>(
+        blit_ctx: *mut gvox_sys::GvoxBlitContext,
+        ctx: *mut gvox_sys::GvoxAdapterContext,
+        range: *const gvox_sys::GvoxRegionRange,
+        channel_flags: u32,
+    ) where
+        D::Handler: ParseAdapterHandler<D>,
+    {
+        use private::*;
+
+        let mut ctx = Self::from_raw(ctx);
+        let blit_ctx = ParseBlitContext::new(ctx.0.context_mut_ptr(), blit_ctx);
+
+        ctx.0.user_data_operation::<D::Handler>(|h| {
+            h.parse_region(&blit_ctx, &(*range).into(), channel_flags.into())
+        });
     }
 }
 
@@ -944,7 +1073,7 @@ impl SerializeContextHolder {
     ///
     /// The provided adapter context pointer must be initializable as a valid serialize context holder,
     /// and size and data must describe a valid, readable section of memory.
-    unsafe extern "C" fn serialize<D: AdapterDescriptor<Serialize>>(
+    unsafe extern "C" fn serialize_region<D: AdapterDescriptor<Serialize>>(
         blit_ctx: *mut gvox_sys::GvoxBlitContext,
         ctx: *mut gvox_sys::GvoxAdapterContext,
         range: *const gvox_sys::GvoxRegionRange,
@@ -964,6 +1093,27 @@ impl SerializeContextHolder {
                 ChannelFlags::from(channel_flags),
             )
         });
+    }
+
+    unsafe extern "C" fn receive_region<D: AdapterDescriptor<Serialize>>(
+        blit_ctx: *mut gvox_sys::GvoxBlitContext,
+        ctx: *mut gvox_sys::GvoxAdapterContext,
+        region: *const gvox_sys::GvoxRegion,
+    ) where
+        D::Handler: SerializeAdapterHandler<D>,
+    {
+        use private::*;
+
+        let mut ctx = Self::from_raw(ctx);
+        let blit_ctx = SerializeBlitContext::new(ctx.0.context_mut_ptr(), blit_ctx);
+
+        let region_ref = RegionRef {
+            blit_ctx: &blit_ctx,
+            region: *region,
+        };
+
+        ctx.0
+            .user_data_operation::<D::Handler>(|h| h.receive_region(&blit_ctx, &region_ref));
     }
 }
 
@@ -990,6 +1140,16 @@ impl ParseBlitContext {
                 position,
                 data.len(),
                 data.as_mut_ptr() as *mut c_void,
+            );
+            ContextInner::get_error_from_raw_ptr(self.ctx)
+        }
+    }
+
+    pub fn emit_region<T>(&self, region: &Region<T>) -> Result<(), GvoxError> {
+        unsafe {
+            gvox_sys::gvox_emit_region(
+                self.blit_ctx,
+                region as *const Region<T> as *const gvox_sys::GvoxRegion,
             );
             ContextInner::get_error_from_raw_ptr(self.ctx)
         }
@@ -1075,7 +1235,12 @@ pub trait BaseAdapterHandler<
     fn destroy(self) -> Result<(), GvoxError>;
 
     /// Called whenever a blit operation begins for the current context.
-    fn blit_begin(&mut self, _: &K::BlitContext) -> Result<(), GvoxError> {
+    fn blit_begin(
+        &mut self,
+        _: &K::BlitContext,
+        _: Option<&RegionRange>,
+        _: ChannelFlags,
+    ) -> Result<(), GvoxError> {
         Ok(())
     }
     /// Called whenever a blit operation ends for the current context.
@@ -1119,6 +1284,10 @@ pub trait ParseAdapterHandler<D: AdapterDescriptor<Parse, Handler = Self>>:
     /// The loaded data associated with a given region of voxels.
     type RegionData;
 
+    fn query_details() -> ParseAdapterDetails;
+
+    fn query_parsable_range(&mut self, blit_ctx: &ParseBlitContext) -> RegionRange;
+
     /// Determines the flags that all voxels in the given region share.
     fn query_region_flags(
         &mut self,
@@ -1137,7 +1306,7 @@ pub trait ParseAdapterHandler<D: AdapterDescriptor<Parse, Handler = Self>>:
     fn unload_region(
         &mut self,
         blit_ctx: &ParseBlitContext,
-        channel_flags: Region<Self::RegionData>,
+        region: Region<Self::RegionData>,
     ) -> Result<(), GvoxError>;
     /// Determines the value of a voxel at the provided sample position.
     fn sample_region(
@@ -1146,19 +1315,35 @@ pub trait ParseAdapterHandler<D: AdapterDescriptor<Parse, Handler = Self>>:
         region: &Region<Self::RegionData>,
         offset: &Offset3D,
         channel_id: ChannelId,
-    ) -> Result<u32, GvoxError>;
+    ) -> Result<Sample, GvoxError>;
+    fn parse_region(
+        &mut self,
+        blit_ctx: &ParseBlitContext,
+        range: &RegionRange,
+        channel_flags: ChannelFlags,
+    ) -> Result<(), GvoxError>;
 }
 
 /// Represents the user data type that handles serialize adapter context operations.
 pub trait SerializeAdapterHandler<D: AdapterDescriptor<Serialize, Handler = Self>>:
     BaseAdapterHandler<Serialize, D>
 {
+    /// The loaded data associated with a given region of voxels.
+    type RegionData;
+
     /// Serializes the provided range of voxels to the output stream.
     fn serialize_region(
         &mut self,
         blit_ctx: &SerializeBlitContext,
         range: &RegionRange,
         channel_flags: ChannelFlags,
+    ) -> Result<(), GvoxError>;
+
+    /// Serializes the provided range of voxels to the output stream.
+    fn receive_region(
+        &mut self,
+        blit_ctx: &SerializeBlitContext,
+        region: &RegionRef<'_>,
     ) -> Result<(), GvoxError>;
 }
 
@@ -1234,7 +1419,7 @@ impl<'a> RegionRef<'a> {
     }
 
     /// Samples the channel value of the voxel at the provided position.
-    pub fn sample(&self, offset: &Offset3D, channel_id: ChannelId) -> Result<u32, GvoxError> {
+    pub fn sample(&self, offset: &Offset3D, channel_id: ChannelId) -> Result<Sample, GvoxError> {
         unsafe {
             let res = gvox_sys::gvox_sample_region(
                 self.blit_ctx.blit_ctx,
@@ -1242,7 +1427,10 @@ impl<'a> RegionRef<'a> {
                 &(*offset).into(),
                 channel_id.into(),
             );
-            ContextInner::get_error_from_raw_ptr(self.blit_ctx.ctx).map(|()| res)
+            ContextInner::get_error_from_raw_ptr(self.blit_ctx.ctx).map(|()| Sample {
+                data: res.data,
+                is_present: res.is_present != 0,
+            })
         }
     }
 }
@@ -1365,6 +1553,25 @@ pub enum ErrorType {
         gvox_sys::GvoxResult_GVOX_RESULT_ERROR_SERIALIZE_ADAPTER_UNREPRESENTABLE_DATA,
 }
 
+/// Describes the type of error that occurred during voxel conversion operations.
+#[derive(Copy, Clone, Debug, PartialEq, Eq, IntEnum)]
+#[repr(i32)]
+pub enum BlitMode {
+    /// The adapter does not care how it's blit
+    DontCare = gvox_sys::GvoxBlitMode_GVOX_BLIT_MODE_DONT_CARE,
+    /// The adapter prefers to be blit parse-driven
+    ParseDriven = gvox_sys::GvoxBlitMode_GVOX_BLIT_MODE_PARSE_DRIVEN,
+    /// The adapter prefers to be blit serialize-driven
+    SerializeDriven = gvox_sys::GvoxBlitMode_GVOX_BLIT_MODE_SERIALIZE_DRIVEN,
+}
+
+/// Describes basic info about a parse adapter
+#[derive(Clone, Debug)]
+pub struct ParseAdapterDetails {
+    /// Allows the adapter to configure which blit mode to use, if using the default blit function
+    preferred_blit_mode: BlitMode,
+}
+
 /// Describes an error that occurred during voxel conversion operations.
 #[derive(Clone, Debug)]
 pub struct GvoxError {
@@ -1397,6 +1604,12 @@ impl std::fmt::Display for GvoxError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("{:?}: {}", self.ty, self.message))
     }
+}
+
+/// Describes a sample that is supplied by the parse adapter.
+pub struct Sample {
+    pub data: u32,
+    pub is_present: bool,
 }
 
 /// Identifies a specific property associated with a voxel volume.
@@ -1794,10 +2007,13 @@ mod private {
                 CString::new(Self::name()).expect("Failed to convert Rust string to C string");
             let adapter_info = gvox_sys::GvoxParseAdapterInfo {
                 base_info: create_base_adapter_info::<Parse, Self>(&name),
+                query_details: Some(ParseContextHolder::query_details::<Self>),
+                query_parsable_range: Some(ParseContextHolder::query_parsable_range::<Self>),
                 query_region_flags: Some(ParseContextHolder::query_region_flags::<Self>),
                 load_region: Some(ParseContextHolder::load_region::<Self>),
                 unload_region: Some(ParseContextHolder::unload_region::<Self>),
                 sample_region: Some(ParseContextHolder::sample_region::<Self>),
+                parse_region: Some(ParseContextHolder::parse_region::<Self>),
             };
             let adapter = gvox_sys::gvox_register_parse_adapter(ptr, &adapter_info);
             ContextInner::get_error_from_raw_ptr(ptr).map(|()| adapter)
@@ -1815,7 +2031,8 @@ mod private {
                 CString::new(Self::name()).expect("Failed to convert Rust string to C string");
             let adapter_info = gvox_sys::GvoxSerializeAdapterInfo {
                 base_info: create_base_adapter_info::<Serialize, Self>(&name),
-                serialize_region: Some(SerializeContextHolder::serialize::<Self>),
+                serialize_region: Some(SerializeContextHolder::serialize_region::<Self>),
+                receive_region: Some(SerializeContextHolder::receive_region::<Self>),
             };
             let adapter = gvox_sys::gvox_register_serialize_adapter(ptr, &adapter_info);
             ContextInner::get_error_from_raw_ptr(ptr).map(|()| adapter)
