@@ -276,11 +276,11 @@ impl NamedAdapter for Voxlap {
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct VoxlapParseAdapterConfig {
     /// The dimensions of the input data.
-    size: Extent3D,
+    pub size: Extent3D,
     /// Whether to fill in the inside of objects, or leave them hollow.
-    make_solid: bool,
+    pub make_solid: bool,
     /// Whether this an Ace of Spades file. Ace of Spades files do not have a header.
-    is_ace_of_spades: bool,
+    pub is_ace_of_spades: bool,
 }
 
 impl Default for VoxlapParseAdapterConfig {
