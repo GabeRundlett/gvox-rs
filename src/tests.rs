@@ -15,6 +15,12 @@ macro_rules! cstr {
 const BYTES: &[u8] = include_bytes!("palette.gvox");
 
 #[test]
+fn test_version() {
+    let gvox_version = gvox_rs::get_version();
+    println!("{}.{}.{}", gvox_version.major, gvox_version.minor, gvox_version.patch);
+}
+
+#[test]
 pub fn gvox_rs_test_procedural() {
     let mut o_buffer = Box::default();
 

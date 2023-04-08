@@ -87,6 +87,28 @@ use std::ops::*;
 use std::slice::*;
 use std::sync::*;
 
+pub struct Version {
+    pub major: u32,
+    pub minor: u32,
+    pub patch: u32,
+}
+
+pub fn get_version() -> Version {
+    let mut result = gvox_sys::GvoxVersion {
+        major: 0,
+        minor: 0,
+        patch: 0,
+    };
+    unsafe {
+        gvox_sys::gvox_get_version(&mut result);
+    }
+    Version {
+        major: result.major,
+        minor: result.minor,
+        patch: result.patch,
+    }
+}
+
 /// Copies a range of voxel data from the specified input
 /// to the specified output, parsing and then serializing
 /// the data using the provided format adapters.

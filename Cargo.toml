@@ -12,5 +12,5 @@ repository = "https://github.com/GabeRundlett/gvox-rs"
 [dependencies]
 bitflags = "1.3.2"
 fxhash = "0.2.1"
-gvox-sys = { path = "gvox-sys", version = "1.2.4", default-features = false }
+gvox-sys = { path = "gvox-sys", version = "1.2.5", default-features = false }
 int-enum = "0.5.0"
