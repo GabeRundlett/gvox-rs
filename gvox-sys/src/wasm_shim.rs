@@ -102,3 +102,19 @@ pub unsafe extern "C" fn atoi(str: *const c_char) -> c_int {
 pub unsafe extern "C" fn abort() {
     std::process::abort();
 }
+
+#[no_mangle]
+pub unsafe extern "C" fn memchr(str: *const c_void, ch: c_int, count: usize) -> *const c_void {
+    let cstr = std::slice::from_raw_parts(str as *const u8, count);
+    let mut index = 0;
+    loop {
+        if index >= count {
+            return std::ptr::null();
+        }
+        let c = cstr[index];
+        if c == ch as u8 {
+            return (str as *const c_char).add(index) as *const c_void;
+        }
+        index += 1;
+    }
+}

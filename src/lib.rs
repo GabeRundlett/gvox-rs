@@ -71,8 +71,14 @@
 /// The set of default adapters that come built-in.
 pub mod adapters;
 
+// Comment out to test the Wasm support
 #[cfg(test)]
 mod tests;
+
+// Uncomment to test the Wasm support
+// pub fn main() {
+//     tests::gvox_rs_test_version();
+// }
 
 use bitflags::*;
 use fxhash::*;
@@ -87,6 +93,7 @@ use std::ops::*;
 use std::slice::*;
 use std::sync::*;
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Version {
     pub major: u32,
     pub minor: u32,
@@ -113,18 +120,26 @@ pub fn get_version() -> Version {
 /// to the specified output, parsing and then serializing
 /// the data using the provided format adapters.
 pub fn blit_region(
-    input_ctx: &mut AdapterContext<'_, Input>,
-    output_ctx: &mut AdapterContext<'_, Output>,
+    input_ctx: Option<&mut AdapterContext<'_, Input>>,
+    output_ctx: Option<&mut AdapterContext<'_, Output>>,
     parse_ctx: &mut AdapterContext<'_, Parse>,
     serialize_ctx: &mut AdapterContext<'_, Serialize>,
     range: Option<&RegionRange>,
     channel_flags: ChannelFlags,
 ) -> Result<(), GvoxError> {
     unsafe {
-        input_ctx.context().execute_inner(|ctx| {
+        parse_ctx.context().execute_inner(|ctx| {
             gvox_sys::gvox_blit_region(
-                input_ctx.as_mut_ptr(),
-                output_ctx.as_mut_ptr(),
+                if input_ctx.is_some() {
+                    input_ctx.unwrap().as_mut_ptr()
+                } else {
+                    std::ptr::null_mut() as *mut gvox_sys::GvoxAdapterContext
+                },
+                if output_ctx.is_some() {
+                    output_ctx.unwrap().as_mut_ptr()
+                } else {
+                    std::ptr::null_mut() as *mut gvox_sys::GvoxAdapterContext
+                },
                 parse_ctx.as_mut_ptr(),
                 serialize_ctx.as_mut_ptr(),
                 if range.is_some() {
@@ -142,18 +157,26 @@ pub fn blit_region(
 
 /// Does the same as blit_region, but explicitly sets the blit mode to prefer parse-driven
 pub fn blit_region_parse_driven(
-    input_ctx: &mut AdapterContext<'_, Input>,
-    output_ctx: &mut AdapterContext<'_, Output>,
+    input_ctx: Option<&mut AdapterContext<'_, Input>>,
+    output_ctx: Option<&mut AdapterContext<'_, Output>>,
     parse_ctx: &mut AdapterContext<'_, Parse>,
     serialize_ctx: &mut AdapterContext<'_, Serialize>,
     range: Option<&RegionRange>,
     channel_flags: ChannelFlags,
 ) -> Result<(), GvoxError> {
     unsafe {
-        input_ctx.context().execute_inner(|ctx| {
+        parse_ctx.context().execute_inner(|ctx| {
             gvox_sys::gvox_blit_region_parse_driven(
-                input_ctx.as_mut_ptr(),
-                output_ctx.as_mut_ptr(),
+                if input_ctx.is_some() {
+                    input_ctx.unwrap().as_mut_ptr()
+                } else {
+                    std::ptr::null_mut() as *mut gvox_sys::GvoxAdapterContext
+                },
+                if output_ctx.is_some() {
+                    output_ctx.unwrap().as_mut_ptr()
+                } else {
+                    std::ptr::null_mut() as *mut gvox_sys::GvoxAdapterContext
+                },
                 parse_ctx.as_mut_ptr(),
                 serialize_ctx.as_mut_ptr(),
                 if range.is_some() {
@@ -171,18 +194,26 @@ pub fn blit_region_parse_driven(
 
 /// Does the same as blit_region, but explicitly sets the blit mode to prefer serialize-driven
 pub fn blit_region_serialize_driven(
-    input_ctx: &mut AdapterContext<'_, Input>,
-    output_ctx: &mut AdapterContext<'_, Output>,
+    input_ctx: Option<&mut AdapterContext<'_, Input>>,
+    output_ctx: Option<&mut AdapterContext<'_, Output>>,
     parse_ctx: &mut AdapterContext<'_, Parse>,
     serialize_ctx: &mut AdapterContext<'_, Serialize>,
     range: Option<&RegionRange>,
     channel_flags: ChannelFlags,
 ) -> Result<(), GvoxError> {
     unsafe {
-        input_ctx.context().execute_inner(|ctx| {
+        parse_ctx.context().execute_inner(|ctx| {
             gvox_sys::gvox_blit_region_serialize_driven(
-                input_ctx.as_mut_ptr(),
-                output_ctx.as_mut_ptr(),
+                if input_ctx.is_some() {
+                    input_ctx.unwrap().as_mut_ptr()
+                } else {
+                    std::ptr::null_mut() as *mut gvox_sys::GvoxAdapterContext
+                },
+                if output_ctx.is_some() {
+                    output_ctx.unwrap().as_mut_ptr()
+                } else {
+                    std::ptr::null_mut() as *mut gvox_sys::GvoxAdapterContext
+                },
                 parse_ctx.as_mut_ptr(),
                 serialize_ctx.as_mut_ptr(),
                 if range.is_some() {
@@ -1817,7 +1848,7 @@ impl BitAnd for ChannelFlags {
 
 impl BitAndAssign for ChannelFlags {
     fn bitand_assign(&mut self, rhs: Self) {
-        *self = *self & rhs;
+        *self = *self & ChannelFlags::from(rhs);
     }
 }
 
@@ -1825,13 +1856,13 @@ impl BitOr for ChannelFlags {
     type Output = Self;
 
     fn bitor(self, rhs: Self) -> Self::Output {
-        Self(self.0 | rhs.0)
+        Self(self.0 | ChannelFlags::from(rhs).0)
     }
 }
 
 impl BitOrAssign for ChannelFlags {
     fn bitor_assign(&mut self, rhs: Self) {
-        *self = *self | rhs;
+        *self = *self | ChannelFlags::from(rhs);
     }
 }
 
@@ -1839,7 +1870,7 @@ impl BitXor for ChannelFlags {
     type Output = Self;
 
     fn bitxor(self, rhs: Self) -> Self::Output {
-        Self(self.0 ^ rhs.0)
+        Self(self.0 ^ ChannelFlags::from(rhs).0)
     }
 }
 
@@ -1853,13 +1884,13 @@ impl BitAnd<ChannelId> for ChannelFlags {
     type Output = Self;
 
     fn bitand(self, rhs: ChannelId) -> Self::Output {
-        Self(self.0 & rhs.0)
+        Self(self.0 & ChannelFlags::from(rhs).0)
     }
 }
 
 impl BitAndAssign<ChannelId> for ChannelFlags {
     fn bitand_assign(&mut self, rhs: ChannelId) {
-        *self = *self & rhs;
+        *self = *self & ChannelFlags::from(rhs);
     }
 }
 
@@ -1867,13 +1898,13 @@ impl BitOr<ChannelId> for ChannelFlags {
     type Output = Self;
 
     fn bitor(self, rhs: ChannelId) -> Self::Output {
-        Self(self.0 | rhs.0)
+        Self(self.0 | ChannelFlags::from(rhs).0)
     }
 }
 
 impl BitOrAssign<ChannelId> for ChannelFlags {
     fn bitor_assign(&mut self, rhs: ChannelId) {
-        *self = *self | rhs;
+        *self = *self | ChannelFlags::from(rhs);
     }
 }
 
@@ -1881,13 +1912,13 @@ impl BitXor<ChannelId> for ChannelFlags {
     type Output = Self;
 
     fn bitxor(self, rhs: ChannelId) -> Self::Output {
-        Self(self.0 ^ rhs.0)
+        Self(self.0 ^ ChannelFlags::from(rhs).0)
     }
 }
 
 impl BitXorAssign<ChannelId> for ChannelFlags {
     fn bitxor_assign(&mut self, rhs: ChannelId) {
-        *self = *self ^ rhs;
+        *self = *self ^ ChannelFlags::from(rhs);
     }
 }
 
