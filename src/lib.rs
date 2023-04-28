@@ -407,11 +407,19 @@ impl ContextInner {
             self.add_external_adapter::<Output, adapters::StdOut>()?;
             self.add_external_adapter::<Parse, adapters::GvoxPalette>()?;
             self.add_external_adapter::<Parse, adapters::GvoxRaw>()?;
+            self.add_external_adapter::<Parse, adapters::GvoxBrickmap>()?;
+            self.add_external_adapter::<Parse, adapters::GvoxGlobalPalette>()?;
+            self.add_external_adapter::<Parse, adapters::GvoxOctree>()?;
+            self.add_external_adapter::<Parse, adapters::GvoxRunLengthEncoding>()?;
             self.add_external_adapter::<Parse, adapters::MagicaVoxel>()?;
             self.add_external_adapter::<Parse, adapters::Voxlap>()?;
             self.add_external_adapter::<Serialize, adapters::ColoredText>()?;
             self.add_external_adapter::<Serialize, adapters::GvoxPalette>()?;
             self.add_external_adapter::<Serialize, adapters::GvoxRaw>()?;
+            self.add_external_adapter::<Serialize, adapters::GvoxBrickmap>()?;
+            self.add_external_adapter::<Serialize, adapters::GvoxGlobalPalette>()?;
+            self.add_external_adapter::<Serialize, adapters::GvoxOctree>()?;
+            self.add_external_adapter::<Serialize, adapters::GvoxRunLengthEncoding>()?;
 
             Ok(())
         }

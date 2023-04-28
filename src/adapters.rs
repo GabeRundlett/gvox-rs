@@ -244,6 +244,82 @@ impl NamedAdapter for GvoxRaw {
     }
 }
 
+/// Handles conversions for Voxlap and Ace of Spades files.
+pub struct GvoxBrickmap;
+
+impl AdapterDescriptor<Parse> for GvoxBrickmap {
+    type Configuration<'a> = ();
+    type Handler = ExternalHandler;
+}
+
+impl AdapterDescriptor<Serialize> for GvoxBrickmap {
+    type Configuration<'a> = ();
+    type Handler = ExternalHandler;
+}
+
+impl NamedAdapter for GvoxBrickmap {
+    fn name() -> &'static str {
+        "gvox_brickmap"
+    }
+}
+
+/// Handles conversions for Voxlap and Ace of Spades files.
+pub struct GvoxGlobalPalette;
+
+impl AdapterDescriptor<Parse> for GvoxGlobalPalette {
+    type Configuration<'a> = ();
+    type Handler = ExternalHandler;
+}
+
+impl AdapterDescriptor<Serialize> for GvoxGlobalPalette {
+    type Configuration<'a> = ();
+    type Handler = ExternalHandler;
+}
+
+impl NamedAdapter for GvoxGlobalPalette {
+    fn name() -> &'static str {
+        "gvox_global_palette"
+    }
+}
+
+/// Handles conversions for Voxlap and Ace of Spades files.
+pub struct GvoxOctree;
+
+impl AdapterDescriptor<Parse> for GvoxOctree {
+    type Configuration<'a> = ();
+    type Handler = ExternalHandler;
+}
+
+impl AdapterDescriptor<Serialize> for GvoxOctree {
+    type Configuration<'a> = ();
+    type Handler = ExternalHandler;
+}
+
+impl NamedAdapter for GvoxOctree {
+    fn name() -> &'static str {
+        "gvox_octree"
+    }
+}
+
+/// Handles conversions for Voxlap and Ace of Spades files.
+pub struct GvoxRunLengthEncoding;
+
+impl AdapterDescriptor<Parse> for GvoxRunLengthEncoding {
+    type Configuration<'a> = ();
+    type Handler = ExternalHandler;
+}
+
+impl AdapterDescriptor<Serialize> for GvoxRunLengthEncoding {
+    type Configuration<'a> = ();
+    type Handler = ExternalHandler;
+}
+
+impl NamedAdapter for GvoxRunLengthEncoding {
+    fn name() -> &'static str {
+        "gvox_run_length_encoding"
+    }
+}
+
 /// Handles conversions for MagicaVoxel files.
 pub struct MagicaVoxel;
 
