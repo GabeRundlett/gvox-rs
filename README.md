@@ -65,9 +65,10 @@ println!("{}", std::str::from_utf8(&o_buffer).expect("Bad string slice."));
 ```
 
 ## Building
-For now, you must have the following things installed to build the repository
+For now, you must have the following things installed to build the repository.
  * A C++ compiler
  * CMake (3.21 or higher)
  * Ninja build
  * vcpkg (plus the VCPKG_ROOT environment variable)
  * The latest WASI_SDK (if you are building for WASM)
+These are necessary because the gvox-rs library is built on the gvox-sys library (subfolder), which is generated via bindgen in order to create language bindings to the C API of Gvox. See the [Gvox README](https://github.com/GabeRundlett/gvox/blob/master/README.md) for more info!
