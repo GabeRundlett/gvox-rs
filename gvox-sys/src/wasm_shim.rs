@@ -118,3 +118,11 @@ pub unsafe extern "C" fn memchr(str: *const c_void, ch: c_int, count: usize) -> 
         index += 1;
     }
 }
+
+#[no_mangle]
+pub unsafe extern "C" fn aligned_alloc(alignment: usize, size: usize) -> *mut c_void {
+    unsafe {
+        let layout = Layout::from_size_align_unchecked(size, alignment);
+        alloc(layout).cast()
+    }
+}
