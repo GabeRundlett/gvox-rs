@@ -244,7 +244,7 @@ impl NamedAdapter for GvoxRaw {
     }
 }
 
-/// Handles conversions for Voxlap and Ace of Spades files.
+/// Handles conversions for Gvox Brickmap files.
 pub struct GvoxBrickmap;
 
 impl AdapterDescriptor<Parse> for GvoxBrickmap {
@@ -263,7 +263,7 @@ impl NamedAdapter for GvoxBrickmap {
     }
 }
 
-/// Handles conversions for Voxlap and Ace of Spades files.
+/// Handles conversions for Gvox Global Palette files.
 pub struct GvoxGlobalPalette;
 
 impl AdapterDescriptor<Parse> for GvoxGlobalPalette {
@@ -282,7 +282,7 @@ impl NamedAdapter for GvoxGlobalPalette {
     }
 }
 
-/// Handles conversions for Voxlap and Ace of Spades files.
+/// Handles conversions for Gvox Octree files.
 pub struct GvoxOctree;
 
 impl AdapterDescriptor<Parse> for GvoxOctree {
@@ -301,7 +301,7 @@ impl NamedAdapter for GvoxOctree {
     }
 }
 
-/// Handles conversions for Voxlap and Ace of Spades files.
+/// Handles conversions for Gvox RLE files.
 pub struct GvoxRunLengthEncoding;
 
 impl AdapterDescriptor<Parse> for GvoxRunLengthEncoding {
