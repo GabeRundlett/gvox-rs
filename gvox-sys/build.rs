@@ -1,6 +1,5 @@
-extern crate bindgen;
-
 fn main() {
+    use std::env;
     if std::env::var("CARGO_CFG_TARGET_ARCH") == Ok("wasm32".to_string()) {
         let dst = cmake::Config::new("gvox")
             .build_target("gvox")
@@ -46,23 +45,28 @@ fn main() {
         );
     }
     println!("cargo:rustc-link-lib=static=gvox");
-    use std::env;
-    use std::path::PathBuf;
     println!("cargo:rerun-if-changed=src/gvox.h");
     println!("cargo:rerun-if-changed=gvox");
-    let bindings = bindgen::Builder::default()
-        .clang_arg("--target=x86_64-pc-windows-msvc")
-        .clang_arg("--language=c")
-        .clang_arg("-DGVOX_ENABLE_FILE_IO=1")
-        .clang_arg("-DGVOX_EXPORT=")
-        .header("src/gvox.h")
-        .parse_callbacks(Box::new(bindgen::CargoCallbacks))
-        .generate()
-        .expect("Unable to generate bindings");
-    let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
-    bindings
-        .write_to_file(out_path.join("bindings.rs"))
-        .expect("Couldn't write bindings!");
+    #[cfg(feature = "bindgen")] {
+        use std::path::PathBuf;
+
+        let bindings = bindgen::Builder::default()
+            .clang_arg("--target=x86_64-pc-windows-msvc")
+            .clang_arg("--language=c")
+            .clang_arg("-DGVOX_ENABLE_FILE_IO=1")
+            .clang_arg("-DGVOX_EXPORT=")
+            .header("src/gvox.h")
+            .parse_callbacks(Box::new(bindgen::CargoCallbacks))
+            .generate()
+            .expect("Unable to generate bindings");
+        let mut out_path = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
+        out_path.push("src");
+        out_path.push("bindings.rs");
+
+        bindings
+            .write_to_file(out_path)
+            .expect("Couldn't write bindings!");
+    }
 }
 
 fn get_profile() -> &'static str {

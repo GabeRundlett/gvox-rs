@@ -84,7 +84,6 @@ mod tests;
 
 use bitflags::*;
 use fxhash::*;
-use int_enum::*;
 use std::any::*;
 use std::collections::hash_map::*;
 use std::error::*;
@@ -442,8 +441,7 @@ impl ContextInner {
             buf.resize(msg_size, 0);
             gvox_sys::gvox_get_result_message(ptr, buf.as_mut_ptr() as *mut i8, &mut msg_size);
 
-            result = Err(GvoxError::new(
-                ErrorType::from_int(code).unwrap_or(ErrorType::Unknown),
+            result = Err(GvoxError::new(ErrorType::from(code),
                 std::str::from_utf8(buf.as_slice())
                     .unwrap_or_default()
                     .to_string(),
@@ -1608,7 +1606,7 @@ impl From<RegionRange> for gvox_sys::GvoxRegionRange {
 }
 
 /// Describes the type of error that occurred during voxel conversion operations.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, IntEnum)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[repr(i32)]
 pub enum ErrorType {
     /// There is no information associated with this error type.
@@ -1633,8 +1631,25 @@ pub enum ErrorType {
         gvox_sys::GvoxResult_GVOX_RESULT_ERROR_SERIALIZE_ADAPTER_UNREPRESENTABLE_DATA,
 }
 
+impl From<i32> for ErrorType {
+    fn from(value: i32) -> Self {
+        match value {
+            gvox_sys::GvoxResult_GVOX_RESULT_ERROR_UNKNOWN => Self::Unknown,
+            gvox_sys::GvoxResult_GVOX_RESULT_ERROR_INVALID_PARAMETER => Self::InvalidParameter,
+            gvox_sys::GvoxResult_GVOX_RESULT_ERROR_INPUT_ADAPTER => Self::InputAdapter,
+            gvox_sys::GvoxResult_GVOX_RESULT_ERROR_OUTPUT_ADAPTER => Self::OutputAdapter,
+            gvox_sys::GvoxResult_GVOX_RESULT_ERROR_PARSE_ADAPTER => Self::ParseAdapter,
+            gvox_sys::GvoxResult_GVOX_RESULT_ERROR_SERIALIZE_ADAPTER => Self::SerializeAdapter,
+            gvox_sys::GvoxResult_GVOX_RESULT_ERROR_PARSE_ADAPTER_INVALID_INPUT => Self::ParseAdapterInvalidInput,
+            gvox_sys::GvoxResult_GVOX_RESULT_ERROR_PARSE_ADAPTER_REQUESTED_CHANNEL_NOT_PRESENT => Self::ParseAdapterRequestedChannelNotPresent,
+            gvox_sys::GvoxResult_GVOX_RESULT_ERROR_SERIALIZE_ADAPTER_UNREPRESENTABLE_DATA => Self::SerializeAdapterUnrepresentableData,
+            _ => Self::Unknown
+        }
+    }
+}
+
 /// Describes the blit mode of voxel conversion operations.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, IntEnum)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[repr(i32)]
 pub enum BlitMode {
     /// The adapter does not care how it's blit
