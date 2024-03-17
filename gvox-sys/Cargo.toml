@@ -11,4 +11,4 @@ repository = "https://github.com/GabeRundlett/gvox-rs"
 
 [build-dependencies]
 cmake = "0.1.49"
-bindgen = "0.63.0"
+bindgen = { version = "0.63.0", default-features = false, features = [ "runtime" ], optional = true }
