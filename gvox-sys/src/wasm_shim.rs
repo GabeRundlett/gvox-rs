@@ -1,20 +1,27 @@
 use std::alloc::*;
 use std::cmp::*;
+use std::mem::*;
 use std::os::raw::*;
+use std::ptr::*;
 
 #[no_mangle]
 pub extern "C" fn malloc(size: usize) -> *mut c_void {
     unsafe {
-        let layout = Layout::from_size_align_unchecked(size, 1);
-        alloc(layout).cast()
+        let mut result = MaybeUninit::uninit();
+        posix_memalign(result.as_mut_ptr(), align_of::<usize>(), size);
+        result.assume_init_read()
     }
 }
 
 #[no_mangle]
 pub extern "C" fn calloc(nmemb: usize, size: usize) -> *mut c_void {
     unsafe {
-        let layout = Layout::from_size_align_unchecked(size * nmemb, 1);
-        alloc(layout).cast()
+        let bytes = size * nmemb;
+        let mut result = MaybeUninit::uninit();
+        posix_memalign(result.as_mut_ptr(), align_of::<usize>(), bytes);
+        let byte_data = std::slice::from_raw_parts_mut(result.assume_init_read().cast::<u8>(), bytes);
+        byte_data.fill(0);
+        result.assume_init_read()
     }
 }
 
@@ -25,16 +32,39 @@ pub unsafe extern "C" fn posix_memalign(
     size: usize,
 ) -> c_int {
     unsafe {
-        let layout = Layout::from_size_align_unchecked(size, alignment);
-        *memptr = alloc(layout).cast();
-        0
+        const USER_OFFSET: usize = size_of::<AllocationTag>() + size_of::<usize>();
+
+        if size == 0 {
+            *memptr = null_mut();
+            0
+        }
+        else {
+            let tagged_size = (size + USER_OFFSET).next_multiple_of(alignment);
+            let layout = Layout::from_size_align_unchecked(tagged_size, alignment);
+            let ptr = alloc(layout);
+    
+            if ptr.is_null() {
+                12
+            }
+            else {
+                ptr.cast::<AllocationTag>().write(AllocationTag { size: tagged_size, align: alignment });
+                let user_start_position = (ptr as usize + USER_OFFSET).next_multiple_of(alignment) as *mut *const AllocationTag;
+                user_start_position.sub(1).write(ptr.cast());
+                *memptr = user_start_position.cast();
+                0
+            }
+        }
     }
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn free(ptr: *mut c_void) {
-    let layout = Layout::from_size_align_unchecked(1, 1);
-    dealloc(ptr.cast(), layout);
+    if !ptr.is_null() {
+        let tag_ptr = ptr.cast::<*mut AllocationTag>().sub(1).read();
+        let tag = tag_ptr.read();
+        let layout = Layout::from_size_align_unchecked(tag.size, tag.align);
+        dealloc(tag_ptr.cast(), layout);
+    }
 }
 
 #[no_mangle]
@@ -125,4 +155,11 @@ pub unsafe extern "C" fn aligned_alloc(alignment: usize, size: usize) -> *mut c_
         let layout = Layout::from_size_align_unchecked(size, alignment);
         alloc(layout).cast()
     }
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+struct AllocationTag {
+    pub size: usize,
+    pub align: usize
 }
