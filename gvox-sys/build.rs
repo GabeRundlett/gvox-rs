@@ -20,6 +20,10 @@ fn main() {
         println!("cargo:rustc-link-lib=dylib=c++");
         println!("cargo:rustc-link-lib=dylib=c++abi");
         println!(
+            "cargo:rustc-link-search=native={}/build",
+            dst.display()
+        );
+        println!(
             "cargo:rustc-link-search=native={}/build/{}",
             dst.display(),
             get_profile()
@@ -38,6 +42,14 @@ fn main() {
                 if static_crt { 1 } else { 0 }
             ))
             .build();
+        
+        if std::env::var("CARGO_CFG_TARGET_OS") == Ok("macos".to_string()) {
+            println!("cargo:rustc-link-lib=dylib=c++");
+        }
+        println!(
+            "cargo:rustc-link-search=native={}/build",
+            dst.display()
+        );
         println!(
             "cargo:rustc-link-search=native={}/build/{}",
             dst.display(),
