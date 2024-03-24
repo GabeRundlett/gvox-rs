@@ -44,7 +44,8 @@ pub unsafe extern "C" fn posix_memalign(
             let ptr = alloc(layout);
     
             if ptr.is_null() {
-                12
+                const ENOMEM: c_int = 12;
+                ENOMEM
             }
             else {
                 ptr.cast::<AllocationTag>().write(AllocationTag { size: tagged_size, align: alignment });
@@ -149,12 +150,38 @@ pub unsafe extern "C" fn memchr(str: *const c_void, ch: c_int, count: usize) -> 
     }
 }
 
+
+
 #[no_mangle]
 pub unsafe extern "C" fn aligned_alloc(alignment: usize, size: usize) -> *mut c_void {
     unsafe {
-        let layout = Layout::from_size_align_unchecked(size, alignment);
-        alloc(layout).cast()
+        let mut result = MaybeUninit::uninit();
+        posix_memalign(result.as_mut_ptr(), alignment, size);
+        result.assume_init_read()
     }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn __cxa_thread_atexit(_: unsafe extern "C" fn(), _: *mut c_void, _: *mut c_void) -> c_int {
+    0
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn clock_gettime(_: c_int, _: *mut timespec) -> c_int {
+    const EINVAL: c_int = 22;
+    EINVAL
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn getentropy(_: *mut c_void, _: usize) -> c_int {
+    const ENOSYS: c_int = 38;
+    ENOSYS
+}
+
+#[repr(C)]
+pub struct timespec {
+    pub tv_sec: i64,
+    pub tv_nsec: c_long,
 }
 
 #[derive(Copy, Clone)]
