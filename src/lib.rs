@@ -412,6 +412,7 @@ impl ContextInner {
             self.add_external_adapter::<Parse, adapters::GvoxRunLengthEncoding>()?;
             self.add_external_adapter::<Parse, adapters::MagicaVoxel>()?;
             self.add_external_adapter::<Parse, adapters::Voxlap>()?;
+            self.add_external_adapter::<Parse, adapters::Kvx>()?;
             self.add_external_adapter::<Serialize, adapters::ColoredText>()?;
             self.add_external_adapter::<Serialize, adapters::GvoxPalette>()?;
             self.add_external_adapter::<Serialize, adapters::GvoxRaw>()?;

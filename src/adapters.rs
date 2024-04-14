@@ -372,3 +372,29 @@ impl Default for VoxlapParseAdapterConfig {
         }
     }
 }
+
+/// Handles conversions for Voxlap and Ace of Spades files.
+pub struct Kvx;
+
+impl AdapterDescriptor<Parse> for Kvx {
+    type Configuration<'a> = KvxParseAdapterConfig;
+    type Handler = ExternalHandler;
+}
+
+impl NamedAdapter for Kvx {
+    fn name() -> &'static str {
+        "kvx"
+    }
+}
+
+/// Describes how Kvx data should be parsed.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct KvxParseAdapterConfig {
+    pub mipmaplevels: u8,
+}
+
+impl Default for KvxParseAdapterConfig {
+    fn default() -> Self {
+        Self { mipmaplevels: 5 }
+    }
+}

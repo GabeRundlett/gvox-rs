@@ -1283,6 +1283,37 @@ fn bindgen_test_layout_GvoxVoxlapParseAdapterConfig() {
         )
     );
 }
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct GvoxKvxParseAdapterConfig {
+    pub mipmaplevels: u8,
+}
+#[test]
+fn bindgen_test_layout_GvoxKvxParseAdapterConfig() {
+    const UNINIT: ::std::mem::MaybeUninit<GvoxKvxParseAdapterConfig> =
+        ::std::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::std::mem::size_of::<GvoxKvxParseAdapterConfig>(),
+        1usize,
+        concat!("Size of: ", stringify!(GvoxKvxParseAdapterConfig))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<GvoxKvxParseAdapterConfig>(),
+        1usize,
+        concat!("Alignment of ", stringify!(GvoxKvxParseAdapterConfig))
+    );
+    assert_eq!(
+        unsafe { ::std::ptr::addr_of!((*ptr).mipmaplevels) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(GvoxKvxParseAdapterConfig),
+            "::",
+            stringify!(mipmaplevels)
+        )
+    );
+}
 pub const GvoxColoredTextSerializeAdapterDownscaleMode_GVOX_COLORED_TEXT_SERIALIZE_ADAPTER_DOWNSCALE_MODE_NEAREST : GvoxColoredTextSerializeAdapterDownscaleMode = 0 ;
 pub const GvoxColoredTextSerializeAdapterDownscaleMode_GVOX_COLORED_TEXT_SERIALIZE_ADAPTER_DOWNSCALE_MODE_LINEAR : GvoxColoredTextSerializeAdapterDownscaleMode = 1 ;
 pub type GvoxColoredTextSerializeAdapterDownscaleMode = ::std::os::raw::c_int;
